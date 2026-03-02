@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import ReactMarkdown from "react-markdown";
 
 interface NotificationCardProps {
   notification: Notification;
@@ -35,9 +36,9 @@ export function NotificationCard({ notification, onClick, onDelete }: Notificati
           </span>
         </div>
         {notification.context && (
-          <p className="text-sm text-muted-foreground mt-0.5 leading-snug line-clamp-2">
-            {notification.context}
-          </p>
+          <div className="text-sm text-muted-foreground mt-0.5 leading-snug line-clamp-2 prose prose-sm dark:prose-invert prose-p:inline prose-strong:font-semibold">
+            <ReactMarkdown>{notification.context.replace(/\n/g, " ")}</ReactMarkdown>
+          </div>
         )}
         <div className="flex items-center gap-2 mt-1">
           {notification.source && (
