@@ -46,7 +46,7 @@ export function NotificationCard({ notification, onClick, onDelete, onMarkAsUnre
           </span>
         </div>
         {notification.context && (
-          <div className="text-sm text-muted-foreground mt-0.5 leading-snug line-clamp-2 prose prose-sm dark:prose-invert prose-p:inline prose-strong:font-semibold">
+          <div className="text-sm text-muted-foreground mt-0.5 leading-snug line-clamp-2 prose prose-sm dark:prose-invert prose-p:inline prose-strong:font-semibold prose-headings:text-sm prose-headings:font-semibold prose-headings:m-0 prose-headings:leading-snug">
             <ReactMarkdown>{notification.context.replace(/\n/g, " ")}</ReactMarkdown>
           </div>
         )}

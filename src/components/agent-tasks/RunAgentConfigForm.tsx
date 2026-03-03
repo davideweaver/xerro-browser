@@ -58,6 +58,12 @@ export function RunAgentConfigForm({ task, onSaved, buttonPosition = "top", onVe
   const [newDirectory, setNewDirectory] = useState("");
   const [local, setLocal] = useState(props.local || false);
   const [localModel, setLocalModel] = useState(props.localModel || "");
+  const [settingSources, setSettingSources] = useState<('user' | 'project' | 'local')[]>(
+    props.settingSources || ['project']
+  );
+  const [disallowedTools, setDisallowedTools] = useState<string[]>(
+    props.disallowedTools || []
+  );
 
   // Fetch available LLM servers from LlamaCPP Admin API
   const { data: serversData } = useQuery({
@@ -102,6 +108,8 @@ export function RunAgentConfigForm({ task, onSaved, buttonPosition = "top", onVe
         ...(additionalDirectories.length > 0 && { additionalDirectories }),
         local,
         ...(local && localModel && { localModel }),
+        ...(JSON.stringify([...settingSources].sort()) !== JSON.stringify(['project']) && { settingSources }),
+        ...(disallowedTools.length > 0 && { disallowedTools }),
       };
 
       return agentTasksService.updateTask(task.id, {
@@ -131,6 +139,8 @@ export function RunAgentConfigForm({ task, onSaved, buttonPosition = "top", onVe
     setNewDirectory("");
     setLocal(props.local || false);
     setLocalModel(props.localModel || "");
+    setSettingSources(props.settingSources || ['project']);
+    setDisallowedTools(props.disallowedTools || []);
     setPromptError("");
     setIsEditing(false);
   };
@@ -226,6 +236,28 @@ export function RunAgentConfigForm({ task, onSaved, buttonPosition = "top", onVe
                     >
                       {dir}
                     </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Settings Sources */}
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">Settings Sources</h3>
+              <div className="flex gap-1 flex-wrap">
+                {(props.settingSources || ['project']).map((s) => (
+                  <span key={s} className="text-xs bg-muted px-2 py-1 rounded">{s}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Blocked Tools */}
+            {props.disallowedTools && props.disallowedTools.length > 0 && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Blocked Tools</h3>
+                <div className="flex gap-1 flex-wrap">
+                  {props.disallowedTools.map((t, i) => (
+                    <span key={i} className="text-xs bg-muted px-2 py-1 rounded">{t}</span>
                   ))}
                 </div>
               </div>
@@ -419,6 +451,43 @@ export function RunAgentConfigForm({ task, onSaved, buttonPosition = "top", onVe
                 Additional directories the agent is allowed to access beyond the working directory
               </p>
             </div>
+          </div>
+
+          {/* Settings Sources */}
+          <div className="space-y-2">
+            <Label>Settings Sources</Label>
+            <div className="flex gap-4">
+              {(['project', 'user', 'local'] as const).map((source) => (
+                <label key={source} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settingSources.includes(source)}
+                    onChange={(e) => {
+                      if (e.target.checked) setSettingSources([...settingSources, source]);
+                      else setSettingSources(settingSources.filter(s => s !== source));
+                    }}
+                    disabled={updateMutation.isPending}
+                  />
+                  {source.charAt(0).toUpperCase() + source.slice(1)}
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Controls which settings directories are loaded (skills, hooks, MCP servers). Add "User" to enable global ~/.claude/ skills.
+            </p>
+          </div>
+
+          {/* Blocked Tools */}
+          <div className="space-y-2">
+            <Label>Blocked Tools</Label>
+            <ToolsMultiSelect
+              selectedTools={disallowedTools}
+              onChange={setDisallowedTools}
+              disabled={updateMutation.isPending}
+            />
+            <p className="text-xs text-muted-foreground">
+              Tools to always block, regardless of permission mode.
+            </p>
           </div>
 
           {/* Local LLM Switch */}

@@ -93,6 +93,10 @@ export interface RunAgentProperties {
   local?: boolean;
   /** Local LLM model name (optional, only used when local is true) */
   localModel?: string;
+  /** Which settings directories to load: skills, hooks, MCP servers (default: ['project']) */
+  settingSources?: ('user' | 'project' | 'local')[];
+  /** Tools to always block regardless of permission mode */
+  disallowedTools?: string[];
 }
 
 /**
@@ -154,6 +158,8 @@ export interface AgentExecutionTrace {
   model?: string;
   cwd?: string;
   permissionMode?: string;
+  /** Settings directories that were loaded for this run */
+  settingSources?: string[];
   toolCalls: TraceToolCall[];
   toolResults: TraceToolResult[];
   permissions: TracePermissionRequest[];

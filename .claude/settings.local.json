@@ -89,7 +89,9 @@
       "Bash(npm uninstall:*)",
       "Bash(pm2 list:*)",
       "Bash(pkill:*)",
-      "Bash(md5:*)"
+      "Bash(md5:*)",
+      "WebFetch(domain:blog.ni18.in)",
+      "WebFetch(domain:www.codemzy.com)"
     ]
   },
   "enableAllProjectMcpServers": true,

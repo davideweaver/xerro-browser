@@ -168,6 +168,16 @@ export function TaskExecutionSheet({
                             <p className="font-mono">{trace.permissionMode}</p>
                           </div>
                         )}
+                        {trace.settingSources && (
+                          <div>
+                            <span className="text-muted-foreground">Settings Sources:</span>
+                            <div className="flex gap-1 flex-wrap mt-0.5">
+                              {trace.settingSources.map((s) => (
+                                <span key={s} className="font-mono bg-muted px-1.5 py-0.5 rounded text-xs">{s}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {trace.totalCostUsd !== undefined && (
                           <div>
                             <span className="text-muted-foreground">Cost:</span>

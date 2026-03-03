@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow, format } from "date-fns";
-import { Clock, CheckCircle2, MessageSquare, FolderOpen, Activity, Send, ExternalLink, MailOpen } from "lucide-react";
+import { Clock, MessageSquare, FolderOpen, Activity, Send, ExternalLink } from "lucide-react";
 import { notificationsService } from "@/api/notificationsService";
 import ReactMarkdown from "react-markdown";
 
@@ -14,6 +14,7 @@ interface NotificationDetailSheetProps {
   notification: Notification | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onMarkAsRead?: (id: string) => void;
   onMarkAsUnread?: (id: string) => void;
 }
 
@@ -25,6 +26,7 @@ export function NotificationDetailSheet({
   notification,
   open,
   onOpenChange,
+  onMarkAsRead,
   onMarkAsUnread,
 }: NotificationDetailSheetProps) {
   const [isSending, setIsSending] = useState(false);
@@ -62,15 +64,23 @@ export function NotificationDetailSheet({
           title={notification.message}
           description={
             notification.read ? (
-              <span className="flex items-center gap-1.5 text-muted-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5" />
+              <button
+                className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Mark as unread"
+                onClick={() => onMarkAsUnread?.(notification.id)}
+              >
+                <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/40 hover:bg-blue-400 transition-colors" />
                 Read {formatDistanceToNow(new Date(notification.readAt!), { addSuffix: true })}
-              </span>
+              </button>
             ) : (
-              <span className="flex items-center gap-1.5 text-blue-500">
-                <div className="h-2 w-2 rounded-full bg-blue-500" />
+              <button
+                className="flex items-center gap-1.5 text-blue-500 hover:text-blue-400 transition-colors cursor-pointer"
+                title="Mark as read"
+                onClick={() => onMarkAsRead?.(notification.id)}
+              >
+                <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
                 Unread
-              </span>
+              </button>
             )
           }
         />
@@ -93,17 +103,6 @@ export function NotificationDetailSheet({
 
           {/* Actions */}
           <div className="flex items-center gap-3 flex-wrap">
-            {notification.read && onMarkAsUnread && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onMarkAsUnread(notification.id)}
-              >
-                <MailOpen className="h-4 w-4 mr-2" />
-                Mark as unread
-              </Button>
-            )}
-
             {/* Send to Slack */}
             {slackThreadUrl ? (
               <div className="flex items-center gap-3">

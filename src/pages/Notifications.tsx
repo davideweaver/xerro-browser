@@ -297,6 +297,7 @@ export default function Notifications() {
         notification={selectedNotification}
         open={isDetailSheetOpen}
         onOpenChange={setIsDetailSheetOpen}
+        onMarkAsRead={(id) => markAsReadMutation.mutate(id)}
         onMarkAsUnread={(id) => markAsUnreadMutation.mutate(id)}
       />
 
