@@ -34,6 +34,8 @@ export default function ProjectDetail() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [todoToEdit, setTodoToEdit] = useState<Todo | null>(null);
   const queryClient = useQueryClient();
   const { confirmDelete: confirmDeleteTodo, DeleteConfirmationDialog: TodoDeleteConfirmationDialog } = useDeleteTodoConfirmation();
 
@@ -106,6 +108,20 @@ export default function ProjectDetail() {
     },
   });
 
+  const updateTodoMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateTodoInput }) =>
+      todosService.updateTodo(id, input),
+    onSuccess: async (updatedTodo) => {
+      await queryClient.invalidateQueries({ queryKey: ["project-todos", projectName] });
+      // Update the side panel with the fresh todo data
+      if (editTodo && updatedTodo.id === editTodo.id) {
+        setEditTodo(updatedTodo);
+      }
+      setEditDialogOpen(false);
+      setTodoToEdit(null);
+    },
+  });
+
   const toggleTodoMutation = useMutation({
     mutationFn: ({ id, completed }: { id: string; completed: boolean }) =>
       todosService.updateTodo(id, { completed }),
@@ -161,6 +177,21 @@ export default function ProjectDetail() {
   const handleTodoSave = async (id: string, input: UpdateTodoInput) => {
     await todosService.updateTodo(id, input);
     queryClient.invalidateQueries({ queryKey: ["project-todos", projectName] });
+  };
+
+  const handleOpenEditDialog = () => {
+    if (editTodo) {
+      setTodoToEdit(editTodo);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleDialogSubmit = (input: CreateTodoInput | UpdateTodoInput, todoId?: string) => {
+    if (todoId) {
+      updateTodoMutation.mutate({ id: todoId, input: input as UpdateTodoInput });
+    } else {
+      createTodoMutation.mutate(input as CreateTodoInput);
+    }
   };
 
   // Filter todos based on hideCompleted state
@@ -567,14 +598,22 @@ export default function ProjectDetail() {
         </Tabs>
       </div>
 
-      {/* Create Todo Dialog */}
+      {/* Create/Edit Todo Dialog */}
       <CreateTodoDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSubmit={(input) => createTodoMutation.mutate(input)}
-        isSubmitting={createTodoMutation.isPending}
+        open={createOpen || editDialogOpen}
+        onOpenChange={(open) => {
+          if (editDialogOpen) {
+            setEditDialogOpen(open);
+            if (!open) setTodoToEdit(null);
+          } else {
+            setCreateOpen(open);
+          }
+        }}
+        onSubmit={handleDialogSubmit}
+        isSubmitting={createTodoMutation.isPending || updateTodoMutation.isPending}
         defaultProjectName={projectName}
-        projectNameDisabled
+        projectNameDisabled={!editDialogOpen} // Allow changing project when editing
+        todo={todoToEdit}
       />
 
       {/* Todo Edit Sheet */}
@@ -582,6 +621,7 @@ export default function ProjectDetail() {
         todo={editTodo}
         onClose={() => setEditTodo(null)}
         onSave={handleTodoSave}
+        onOpenEditDialog={handleOpenEditDialog}
       />
 
       {/* NodeDetailSheet for graph navigation */}

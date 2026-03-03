@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
-import type { CreateTodoInput } from "@/types/todos";
+import type { CreateTodoInput, Todo, UpdateTodoInput } from "@/types/todos";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,10 +16,11 @@ import { cn } from "@/lib/utils";
 export interface CreateTodoDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (input: CreateTodoInput) => void;
+  onSubmit: (input: CreateTodoInput | UpdateTodoInput, todoId?: string) => void;
   isSubmitting: boolean;
   defaultProjectName?: string;
   projectNameDisabled?: boolean;
+  todo?: Todo | null; // If provided, dialog is in "edit mode"
 }
 
 export function CreateTodoDialog({
@@ -29,8 +30,10 @@ export function CreateTodoDialog({
   isSubmitting,
   defaultProjectName,
   projectNameDisabled,
+  todo,
 }: CreateTodoDialogProps) {
   const { groupId } = useGraphiti();
+  const isEditMode = !!todo;
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [projectName, setProjectName] = useState<string | null>(defaultProjectName || null);
@@ -39,26 +42,55 @@ export function CreateTodoDialog({
 
   useEffect(() => {
     if (open) {
+      if (isEditMode && todo) {
+        // Populate with existing todo data
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTitle(todo.title);
+        setBody(todo.body || "");
+        setProjectName(todo.projectName || null);
+        setScheduledDate(todo.scheduledDate ? new Date(todo.scheduledDate) : undefined);
+      } else {
+        // Reset for new todo
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTitle("");
+        setBody("");
+        setProjectName(defaultProjectName || null);
+        setScheduledDate(undefined);
+      }
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setTitle("");
-      setBody("");
-      setProjectName(defaultProjectName || null);
-      setScheduledDate(undefined);
       setCalendarOpen(false);
     }
-  }, [open, defaultProjectName]);
+  }, [open, defaultProjectName, isEditMode, todo]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    const input: CreateTodoInput = { title: title.trim() };
-    if (body.trim()) input.body = body.trim();
-    if (projectName) input.projectName = projectName;
-    if (scheduledDate) {
-      const d = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
-      input.scheduledDate = d.toISOString();
+
+    if (isEditMode && todo) {
+      // Build update input (only include changed fields)
+      const input: UpdateTodoInput = { title: title.trim() };
+      if (body.trim()) input.body = body.trim();
+      else input.body = null; // Explicitly clear if empty
+      if (projectName) input.projectName = projectName;
+      else input.projectName = null;
+      if (scheduledDate) {
+        const d = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+        input.scheduledDate = d.toISOString();
+      } else {
+        input.scheduledDate = null;
+      }
+      onSubmit(input, todo.id);
+    } else {
+      // Build create input
+      const input: CreateTodoInput = { title: title.trim() };
+      if (body.trim()) input.body = body.trim();
+      if (projectName) input.projectName = projectName;
+      if (scheduledDate) {
+        const d = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
+        input.scheduledDate = d.toISOString();
+      }
+      onSubmit(input);
     }
-    onSubmit(input);
   };
 
   const footer = (
@@ -71,7 +103,10 @@ export function CreateTodoDialog({
         disabled={isSubmitting || !title.trim()}
         onClick={handleSubmit}
       >
-        {isSubmitting ? "Creating..." : "Create"}
+        {isSubmitting
+          ? (isEditMode ? "Updating..." : "Creating...")
+          : (isEditMode ? "Update" : "Create")
+        }
       </Button>
     </div>
   );
@@ -80,7 +115,7 @@ export function CreateTodoDialog({
     <BaseDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="New Todo"
+      title={isEditMode ? "Edit Todo" : "New Todo"}
       footer={footer}
       footerHeight={64}
     >
@@ -97,16 +132,18 @@ export function CreateTodoDialog({
             className="text-lg"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="todo-body" className="text-base">Notes</Label>
-          <Textarea
-            id="todo-body"
-            placeholder="Add any additional notes or details..."
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="min-h-[100px] resize-y text-lg"
-          />
-        </div>
+        {!isEditMode && (
+          <div className="space-y-2">
+            <Label htmlFor="todo-body" className="text-base">Notes</Label>
+            <Textarea
+              id="todo-body"
+              placeholder="Add any additional notes or details..."
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              className="min-h-[100px] resize-y text-lg"
+            />
+          </div>
+        )}
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="todo-project" className="text-base">Project</Label>

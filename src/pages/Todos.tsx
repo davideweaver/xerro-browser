@@ -47,22 +47,12 @@ function groupTodosByProject(todos: Todo[]): { project: string; todos: Todo[] }[
 
 async function fetchTodayTodos(search?: string): Promise<TodoListResult> {
   const today = new Date().toISOString().split("T")[0];
-  const [scheduled, unscheduled] = await Promise.all([
-    todosService.listTodos({
-      scheduledDate: today,
-      completed: false,
-      search,
-      limit: 200,
-    }),
-    todosService.listTodos({
-      unscheduled: true,
-      completed: false,
-      search,
-      limit: 200,
-    }),
-  ]);
-  const todos = [...scheduled.todos, ...unscheduled.todos];
-  return { todos, total: todos.length, limit: 200, offset: 0 };
+  return todosService.listTodos({
+    scheduledDate: today,
+    completed: false,
+    search,
+    limit: 200,
+  });
 }
 
 function buildQueryFilter(filter: string, search?: string): TodoListFilter {
@@ -86,6 +76,8 @@ export default function Todos() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [editTodo, setEditTodo] = useState<Todo | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [todoToEdit, setTodoToEdit] = useState<Todo | null>(null);
   const [showCompleted, setShowCompleted] = useState(
     () => localStorage.getItem("todos-show-completed") === "true",
   );
@@ -182,9 +174,39 @@ export default function Todos() {
     },
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, input }: { id: string; input: UpdateTodoInput }) =>
+      todosService.updateTodo(id, input),
+    onSuccess: async (updatedTodo) => {
+      await queryClient.invalidateQueries({ queryKey: ["todos"] });
+      await queryClient.invalidateQueries({ queryKey: ["todos-projects"] });
+      // Update the side panel with the fresh todo data
+      if (editTodo && updatedTodo.id === editTodo.id) {
+        setEditTodo(updatedTodo);
+      }
+      setEditDialogOpen(false);
+      setTodoToEdit(null);
+    },
+  });
+
   const handleSave = async (id: string, input: UpdateTodoInput) => {
     await todosService.updateTodo(id, input);
     queryClient.invalidateQueries({ queryKey: ["todos"] });
+  };
+
+  const handleOpenEditDialog = () => {
+    if (editTodo) {
+      setTodoToEdit(editTodo);
+      setEditDialogOpen(true);
+    }
+  };
+
+  const handleDialogSubmit = (input: CreateTodoInput | UpdateTodoInput, todoId?: string) => {
+    if (todoId) {
+      updateMutation.mutate({ id: todoId, input: input as UpdateTodoInput });
+    } else {
+      createMutation.mutate(input as CreateTodoInput);
+    }
   };
 
   const getEmptyMessage = () => {
@@ -316,14 +338,23 @@ export default function Todos() {
         todo={editTodo}
         onClose={() => setEditTodo(null)}
         onSave={handleSave}
+        onOpenEditDialog={handleOpenEditDialog}
       />
 
       <CreateTodoDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSubmit={(input) => createMutation.mutate(input)}
-        isSubmitting={createMutation.isPending}
+        open={createOpen || editDialogOpen}
+        onOpenChange={(open) => {
+          if (editDialogOpen) {
+            setEditDialogOpen(open);
+            if (!open) setTodoToEdit(null);
+          } else {
+            setCreateOpen(open);
+          }
+        }}
+        onSubmit={handleDialogSubmit}
+        isSubmitting={createMutation.isPending || updateMutation.isPending}
         defaultProjectName={defaultProjectName}
+        todo={todoToEdit}
       />
 
       <DeleteConfirmationDialog />

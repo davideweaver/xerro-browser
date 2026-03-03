@@ -19,7 +19,7 @@ import {
   Bold, Italic, Underline as UnderlineIcon,
   List, ListOrdered, ListChecks, Code2,
   Undo2, Redo2, ClipboardPaste,
-  Send, ExternalLink, CheckCircle2,
+  Send, ExternalLink, CheckCircle2, Edit3,
 } from "lucide-react";
 
 const CustomTaskItem = TaskItem.extend({
@@ -253,9 +253,10 @@ interface TodoEditSheetProps {
   todo: Todo | null;
   onClose: () => void;
   onSave: (id: string, input: UpdateTodoInput) => Promise<void>;
+  onOpenEditDialog?: () => void;
 }
 
-export function TodoEditSheet({ todo, onClose, onSave }: TodoEditSheetProps) {
+export function TodoEditSheet({ todo, onClose, onSave, onOpenEditDialog }: TodoEditSheetProps) {
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [isSending, setIsSending] = useState(false);
   const [slackThreadUrl, setSlackThreadUrl] = useState<string | null>(null);
@@ -263,15 +264,6 @@ export function TodoEditSheet({ todo, onClose, onSave }: TodoEditSheetProps) {
   const pendingSaveRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedMarkdownRef = useRef<string>("");
   const currentTodoIdRef = useRef<string | null>(null);
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [titleValue, setTitleValue] = useState("");
-  const [displayTitle, setDisplayTitle] = useState(todo?.title ?? "");
-  const titleInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (todo) setDisplayTitle(todo.title);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todo?.id]);
 
   useEffect(() => {
     if (todo) {
@@ -281,39 +273,6 @@ export function TodoEditSheet({ todo, onClose, onSave }: TodoEditSheetProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo?.id]);
-
-  useEffect(() => {
-    if (editingTitle) {
-      titleInputRef.current?.focus();
-      titleInputRef.current?.select();
-    }
-  }, [editingTitle]);
-
-  const [editingDate, setEditingDate] = useState(false);
-  const [dateValue, setDateValue] = useState("");
-  const [displayDate, setDisplayDate] = useState<string | null>(todo?.scheduledDate ?? null);
-  const dateInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (todo) setDisplayDate(todo.scheduledDate ?? null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todo?.id]);
-
-  useEffect(() => {
-    if (editingDate) dateInputRef.current?.focus();
-  }, [editingDate]);
-
-  const saveDate = (val: string) => {
-    if (!todo) return;
-    if (val) {
-      const iso = new Date(val + "T00:00:00").toISOString();
-      onSave(todo.id, { scheduledDate: iso });
-      setDisplayDate(iso);
-    } else {
-      onSave(todo.id, { scheduledDate: null });
-      setDisplayDate(null);
-    }
-  };
 
   async function handleSendToSlack() {
     if (!todo) return;
@@ -380,8 +339,6 @@ export function TodoEditSheet({ todo, onClose, onSave }: TodoEditSheetProps) {
     const initialMarkdown = todo.body ?? "";
     lastSavedMarkdownRef.current = initialMarkdown;
     setSaveState("idle");
-    setEditingTitle(false);
-    setEditingDate(false);
     editor.commands.setContent(initialMarkdown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [todo?.id, editor]);
@@ -401,108 +358,60 @@ export function TodoEditSheet({ todo, onClose, onSave }: TodoEditSheetProps) {
             <div className="px-6">
               <SidePanelHeader
                 titleClassName="text-lg text-zinc-100"
-                title={
-                editingTitle ? (
-                  <input
-                    ref={titleInputRef}
-                    value={titleValue}
-                    onChange={(e) => setTitleValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Escape") {
-                        setEditingTitle(false);
-                      } else if (e.key === "Enter") {
-                        e.preventDefault();
-                        const trimmed = titleValue.trim();
-                        if (trimmed && trimmed !== displayTitle) {
-                          onSave(todo.id, { title: trimmed });
-                          setDisplayTitle(trimmed);
-                        }
-                        setEditingTitle(false);
-                      }
-                    }}
-                    onBlur={() => setEditingTitle(false)}
-                    className="text-lg font-semibold leading-snug text-zinc-100 bg-transparent border-b border-zinc-500 focus:border-zinc-300 focus:outline-none w-full"
-                  />
-                ) : (
-                  <span
-                    className="cursor-text hover:text-zinc-300 transition-colors"
-                    onClick={() => { setTitleValue(displayTitle); setEditingTitle(true); }}
-                  >
-                    {displayTitle}
-                  </span>
-                )
-              }
-              description={
-                <div className="flex items-center gap-2">
-                  {/* Save status */}
-                  {saveState === "saving" && (
-                    <span className="flex items-center gap-1">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Saving…
-                    </span>
-                  )}
-                  {saveState === "saved" && (
-                    <span className="flex items-center gap-1">
-                      <Check className="h-3 w-3 text-green-500" />
-                      Saved
-                    </span>
-                  )}
-                  {saveState === "idle" && (
-                    <>
-                      {/* Date */}
-                      {editingDate ? (
-                        <input
-                          ref={dateInputRef}
-                          type="date"
-                          value={dateValue}
-                          onChange={(e) => setDateValue(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Escape") {
-                              setEditingDate(false);
-                            } else if (e.key === "Enter") {
-                              e.preventDefault();
-                              saveDate(dateValue);
-                              setEditingDate(false);
-                            }
-                          }}
-                          onBlur={() => setEditingDate(false)}
-                          className="text-sm bg-transparent border-b border-zinc-500 focus:border-zinc-300 focus:outline-none text-zinc-400"
-                        />
-                      ) : displayDate ? (
-                        <span
-                          className="flex items-center gap-1 cursor-pointer hover:text-zinc-300 transition-colors"
-                          onClick={() => { setDateValue(displayDate.split("T")[0]); setEditingDate(true); }}
-                        >
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          {formatScheduledDate(displayDate)}
-                        </span>
-                      ) : (
-                        <span
-                          className="flex items-center gap-1 text-zinc-600 cursor-pointer hover:text-zinc-400 transition-colors"
-                          onClick={() => { setDateValue(new Date().toISOString().split("T")[0]); setEditingDate(true); }}
-                        >
-                          <CalendarDays className="h-3.5 w-3.5" />
-                          Add date
-                        </span>
-                      )}
-                      {/* Project name */}
-                      {todo.projectName && (
-                        <>
-                          <span className="text-zinc-600">•</span>
+                title={todo.title}
+                description={
+                  <div className="flex items-center gap-2">
+                    {/* Save status */}
+                    {saveState === "saving" && (
+                      <span className="flex items-center gap-1">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Saving…
+                      </span>
+                    )}
+                    {saveState === "saved" && (
+                      <span className="flex items-center gap-1">
+                        <Check className="h-3 w-3 text-green-500" />
+                        Saved
+                      </span>
+                    )}
+                    {saveState === "idle" && (
+                      <>
+                        {/* Date */}
+                        {todo.scheduledDate && (
                           <span className="flex items-center gap-1">
-                            <FolderOpen className="h-3.5 w-3.5" />
-                            {todo.projectName}
+                            <CalendarDays className="h-3.5 w-3.5" />
+                            {formatScheduledDate(todo.scheduledDate)}
                           </span>
-                        </>
-                      )}
-                    </>
-                  )}
-                </div>
-              }
-            />
+                        )}
+                        {/* Project name */}
+                        {todo.projectName && (
+                          <>
+                            {todo.scheduledDate && <span className="text-zinc-600">•</span>}
+                            <span className="flex items-center gap-1">
+                              <FolderOpen className="h-3.5 w-3.5" />
+                              {todo.projectName}
+                            </span>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+                }
+              />
             </div>
-            {/* Slack strip */}
-            <div className="px-6 pt-2 pb-1">
+            {/* Action buttons strip */}
+            <div className="px-6 pt-2 pb-1 flex items-center gap-2">
+              {onOpenEditDialog && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onOpenEditDialog}
+                  className="border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 hover:bg-zinc-800"
+                >
+                  <Edit3 className="h-4 w-4 mr-2" />
+                  Edit
+                </Button>
+              )}
               {slackThreadUrl ? (
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1.5 text-sm text-green-400 font-medium">
