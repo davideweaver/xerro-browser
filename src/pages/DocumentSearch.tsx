@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { documentsService } from "@/api/documentsService";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, FileText, ArrowRight, X } from "lucide-react";
+import { Search, FileText, ArrowRight, X, Loader2 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -30,6 +30,8 @@ export default function DocumentSearch() {
   const [clickedResults, setClickedResultsState] = useState<Set<string>>(
     () => new Set(getClickedResults())
   );
+  const [searchDuration, setSearchDuration] = useState<number | null>(null);
+  const searchStartTime = useRef<number | null>(null);
 
   // Fetch search results
   const { data, isLoading } = useQuery({
@@ -40,10 +42,14 @@ export default function DocumentSearch() {
 
   const results = useMemo(() => data?.results || [], [data?.results]);
 
-  // Save results to localStorage
+  // Save results and record duration when results arrive
   useEffect(() => {
     if (results.length > 0) {
       setSearchResults(results);
+      if (searchStartTime.current !== null) {
+        setSearchDuration((Date.now() - searchStartTime.current) / 1000);
+        searchStartTime.current = null;
+      }
     }
   }, [results]);
 
@@ -54,9 +60,11 @@ export default function DocumentSearch() {
       const query = searchInput.trim();
       setSearchQueryState(query);
       setSearchQuery(query);
-      // Clear clicked results on new search
+      // Clear clicked results and duration on new search
       setClickedResultsState(new Set());
       setClickedResults([]);
+      setSearchDuration(null);
+      searchStartTime.current = Date.now();
     }
   };
 
@@ -84,7 +92,6 @@ export default function DocumentSearch() {
     <Container
       title="Search Documents"
       description="Search your Obsidian vault using semantic search"
-      loading={isLoading}
     >
       <div className="space-y-6">
         {/* Search Input */}
@@ -100,9 +107,10 @@ export default function DocumentSearch() {
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="focus-visible:ring-0 focus-visible:ring-offset-0"
+                  disabled={isLoading}
                   autoFocus
                 />
-                {searchInput && (
+                {searchInput && !isLoading && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -114,8 +122,12 @@ export default function DocumentSearch() {
                   </Button>
                 )}
               </div>
-              <Button type="submit" size="icon" disabled={!searchInput.trim()}>
-                <Search className="h-4 w-4" />
+              <Button type="submit" size="icon" disabled={!searchInput.trim() || isLoading}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>
@@ -165,6 +177,7 @@ export default function DocumentSearch() {
             <div>
               <div className="mb-4 text-sm text-muted-foreground">
                 Found {results.length} result{results.length !== 1 ? "s" : ""}
+                {searchDuration !== null && ` in ${searchDuration.toFixed(1)}s`}
               </div>
               <div className="space-y-3">
                 {results.map((result, index) => {

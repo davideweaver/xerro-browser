@@ -11,13 +11,22 @@ const SEARCH_RESULTS_KEY = "graphiti-documents-search-results";
 const SEARCH_LAST_CLICKED_KEY = "graphiti-documents-search-last-clicked";
 const SEARCH_CLICKED_RESULTS_KEY = "graphiti-documents-search-clicked-results";
 
+const SEARCH_QUERY_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 /**
  * Get the current search query from localStorage
- * @returns The search query or empty string
+ * Returns empty string if not set or older than 1 hour
  */
 export function getSearchQuery(): string {
   try {
-    return localStorage.getItem(SEARCH_QUERY_KEY) || "";
+    const stored = localStorage.getItem(SEARCH_QUERY_KEY);
+    if (!stored) return "";
+    const { query, savedAt } = JSON.parse(stored);
+    if (Date.now() - savedAt > SEARCH_QUERY_TTL_MS) {
+      localStorage.removeItem(SEARCH_QUERY_KEY);
+      return "";
+    }
+    return query || "";
   } catch (error) {
     console.error("Failed to read search query from localStorage:", error);
     return "";
@@ -25,12 +34,18 @@ export function getSearchQuery(): string {
 }
 
 /**
- * Set the current search query in localStorage
- * @param query - The search query to save
+ * Set the current search query in localStorage with a timestamp
  */
 export function setSearchQuery(query: string): void {
   try {
-    localStorage.setItem(SEARCH_QUERY_KEY, query);
+    if (!query) {
+      localStorage.removeItem(SEARCH_QUERY_KEY);
+    } else {
+      localStorage.setItem(
+        SEARCH_QUERY_KEY,
+        JSON.stringify({ query, savedAt: Date.now() })
+      );
+    }
   } catch (error) {
     console.error("Failed to save search query to localStorage:", error);
   }
