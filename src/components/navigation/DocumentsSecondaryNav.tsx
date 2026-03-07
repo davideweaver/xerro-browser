@@ -133,7 +133,14 @@ export function DocumentsSecondaryNav({
             <RefreshCw size={20} />
           </SecondaryNavToolButton>
           <SecondaryNavToolButton
-            onClick={() => onNavigate("/documents/search")}
+            onClick={() => {
+              const path = "/documents/search";
+              if (onDocumentSelect) {
+                onDocumentSelect(path);
+              } else {
+                onNavigate(path);
+              }
+            }}
           >
             <Search size={22} />
           </SecondaryNavToolButton>
