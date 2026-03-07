@@ -355,9 +355,7 @@ export function RunAgentConfigForm({
                   System Prompt
                 </h3>
                 {!props.systemPrompt ? (
-                  <p className="text-sm text-muted-foreground">
-                    Default (claude_code preset)
-                  </p>
+                  <p className="text-sm">Default</p>
                 ) : typeof props.systemPrompt === "string" ? (
                   <div>
                     <p className="text-xs text-amber-600 dark:text-amber-500 mb-1">
@@ -585,10 +583,22 @@ export function RunAgentConfigForm({
           <div className="space-y-2">
             <Label>Settings Sources</Label>
             <div className="space-y-2">
-              {([
-                { value: 'project', label: 'Project', description: 'Current folder settings', path: '.claude/settings.json' },
-                { value: 'user', label: 'User', description: 'Global user settings', path: '~/.claude/settings.json' },
-              ] as const).map(({ value, label, description, path }) => (
+              {(
+                [
+                  {
+                    value: "project",
+                    label: "Project",
+                    description: "Current folder settings",
+                    path: ".claude/settings.json",
+                  },
+                  {
+                    value: "user",
+                    label: "User",
+                    description: "Global user settings",
+                    path: "~/.claude/settings.json",
+                  },
+                ] as const
+              ).map(({ value, label, description, path }) => (
                 <label
                   key={value}
                   className="flex items-start gap-3 cursor-pointer"
