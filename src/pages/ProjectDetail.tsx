@@ -56,9 +56,14 @@ export default function ProjectDetail() {
   // Fetch sessions for this project
   const { data: sessionsData, isLoading: isLoadingSessions } = useQuery({
     queryKey: ["xerro-project-sessions", projectName],
-    queryFn: () => xerroProjectsService.listSessions({ projectName, limit: 100 }),
+    queryFn: () => xerroProjectsService.listSessions({ projectName, limit: 20 }),
     enabled: !!projectName,
   });
+
+  const [allSessions, setAllSessions] = useState<XerroSession[]>([]);
+  const [sessionsCursor, setSessionsCursor] = useState<string | undefined>(undefined);
+  const [sessionsHasMore, setSessionsHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // Fetch memory reference docs for this project (Documents tab)
   const { data: memoryData, isLoading: isLoadingMemory } = useQuery({
@@ -178,6 +183,37 @@ export default function ProjectDetail() {
     const block = await xerroProjectsService.getMemoryBlock(label);
     setSelectedDocContent(block?.content ?? "");
     setIsLoadingDocContent(false);
+  };
+
+  useEffect(() => {
+    setAllSessions([]);
+    setSessionsCursor(undefined);
+    setSessionsHasMore(false);
+  }, [projectName]);
+
+  useEffect(() => {
+    if (sessionsData) {
+      setAllSessions(sessionsData.sessions);
+      setSessionsCursor(sessionsData.nextCursor);
+      setSessionsHasMore(sessionsData.hasMore);
+    }
+  }, [sessionsData]);
+
+  const handleLoadMoreSessions = async () => {
+    if (!projectName || !sessionsCursor || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const more = await xerroProjectsService.listSessions({
+        projectName,
+        limit: 20,
+        cursor: sessionsCursor,
+      });
+      setAllSessions(prev => [...prev, ...more.sessions]);
+      setSessionsCursor(more.nextCursor);
+      setSessionsHasMore(more.hasMore);
+    } finally {
+      setIsLoadingMore(false);
+    }
   };
 
   useEffect(() => {
@@ -349,16 +385,16 @@ export default function ProjectDetail() {
                 ))}
               </div>
             )}
-            {!isLoadingSessions && sessions.length === 0 && (
+            {!isLoadingSessions && allSessions.length === 0 && (
               <Card>
                 <CardContent className="p-12 text-center">
                   <p className="text-muted-foreground">No sessions found for this project</p>
                 </CardContent>
               </Card>
             )}
-            {!isLoadingSessions && sessions.length > 0 && (
+            {!isLoadingSessions && allSessions.length > 0 && (
               <div className="space-y-4">
-                {sessions.map((session, idx) => (
+                {allSessions.map((session, idx) => (
                   <div key={session.id}>
                     <XerroSessionRow
                       session={session}
@@ -368,9 +404,20 @@ export default function ProjectDetail() {
                         )
                       }
                     />
-                    {idx < sessions.length - 1 && <Separator className="mt-4" />}
+                    {idx < allSessions.length - 1 && <Separator className="mt-4" />}
                   </div>
                 ))}
+                {sessionsHasMore && (
+                  <div className="flex justify-center py-4">
+                    <Button
+                      variant="outline"
+                      onClick={handleLoadMoreSessions}
+                      disabled={isLoadingMore}
+                    >
+                      {isLoadingMore ? "Loading..." : "Load More"}
+                    </Button>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
