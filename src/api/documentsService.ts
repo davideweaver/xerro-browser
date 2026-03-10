@@ -84,14 +84,14 @@ class DocumentsService {
     params.append("recursive", recursive.toString());
 
     return this.fetch<DocumentListResponse>(
-      `/api/v1/obsidian/documents?${params}`
+      `/api/v1/documents?${params}`
     );
   }
 
   async getDocument(path: string): Promise<DocumentViewResponse> {
     const params = new URLSearchParams({ path });
     return this.fetch<DocumentViewResponse>(
-      `/api/v1/obsidian/documents/view?${params}`
+      `/api/v1/documents/view?${params}`
     );
   }
 
@@ -141,7 +141,7 @@ class DocumentsService {
   ): Promise<DocumentSearchResponse> {
     const body: DocumentSearchRequest = { query, limit };
     return this.fetch<DocumentSearchResponse>(
-      "/api/v1/obsidian/search",
+      "/api/v1/documents/search",
       {
         method: "POST",
         body: JSON.stringify(body),
@@ -152,7 +152,7 @@ class DocumentsService {
   async updateDocument(path: string, content: string): Promise<DocumentViewResponse> {
     const params = new URLSearchParams({ path });
     return this.fetch<DocumentViewResponse>(
-      `/api/v1/obsidian/documents?${params}`,
+      `/api/v1/documents?${params}`,
       {
         method: "PUT",
         body: JSON.stringify({ content, preserveFrontmatter: true, autoVectorize: true }),
@@ -163,7 +163,7 @@ class DocumentsService {
   async deleteDocument(path: string): Promise<void> {
     const params = new URLSearchParams({ path });
     return this.fetch<void>(
-      `/api/v1/obsidian/documents?${params}`,
+      `/api/v1/documents?${params}`,
       {
         method: "DELETE",
       }
@@ -176,13 +176,13 @@ class DocumentsService {
       params.append("tags", tags.join(","));
     }
     return this.fetch<BookmarkListResponse>(
-      `/api/v1/obsidian/bookmarks${params.toString() ? `?${params}` : ""}`
+      `/api/v1/documents/bookmarks${params.toString() ? `?${params}` : ""}`
     );
   }
 
   async addBookmark(request: BookmarkRequest): Promise<Bookmark> {
     return this.fetch<Bookmark>(
-      "/api/v1/obsidian/bookmarks",
+      "/api/v1/documents/bookmarks",
       {
         method: "POST",
         body: JSON.stringify(request),
@@ -193,7 +193,7 @@ class DocumentsService {
   async removeBookmark(path: string): Promise<BookmarkDeleteResponse> {
     const params = new URLSearchParams({ path });
     return this.fetch<BookmarkDeleteResponse>(
-      `/api/v1/obsidian/bookmarks?${params}`,
+      `/api/v1/documents/bookmarks?${params}`,
       {
         method: "DELETE",
       }

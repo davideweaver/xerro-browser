@@ -131,7 +131,7 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     });
 
     // Document events - notify all subscribers
-    socket.on('obsidian:document-added', (data: DocumentChangeEvent) => {
+    socket.on('documents:document-added', (data: DocumentChangeEvent) => {
       console.log('[Xerro WebSocket] Document added:', data.path);
       documentAddedCallbacksRef.current.forEach(callback => {
         try {
@@ -142,7 +142,7 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
-    socket.on('obsidian:document-updated', (data: DocumentChangeEvent) => {
+    socket.on('documents:document-updated', (data: DocumentChangeEvent) => {
       console.log('[Xerro WebSocket] Document updated:', data.path);
       documentUpdatedCallbacksRef.current.forEach(callback => {
         try {
@@ -153,7 +153,7 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
-    socket.on('obsidian:document-removed', (data: DocumentChangeEvent) => {
+    socket.on('documents:document-removed', (data: DocumentChangeEvent) => {
       console.log('[Xerro WebSocket] Document removed:', data.path);
       documentRemovedCallbacksRef.current.forEach(callback => {
         try {

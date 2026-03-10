@@ -197,9 +197,9 @@ export interface XerroWebSocketEvents {
   'scheduled-tasks:task-created': (data: TaskConfigEvent) => void;
   'scheduled-tasks:task-updated': (data: TaskConfigEvent) => void;
   'scheduled-tasks:task-deleted': (data: TaskConfigEvent) => void;
-  'obsidian:document-added': (data: DocumentChangeEvent) => void;
-  'obsidian:document-updated': (data: DocumentChangeEvent) => void;
-  'obsidian:document-removed': (data: DocumentChangeEvent) => void;
+  'documents:document-added': (data: DocumentChangeEvent) => void;
+  'documents:document-updated': (data: DocumentChangeEvent) => void;
+  'documents:document-removed': (data: DocumentChangeEvent) => void;
   'obsidian:bookmark-changed': (data: BookmarkChangeEvent) => void;
   'todos:todo-created': (data: TodoChangeEvent) => void;
   'todos:todo-updated': (data: TodoChangeEvent) => void;
