@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent } from '@/types/websocket';
+import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload } from '@/types/websocket';
 import type { NotificationCreatedEvent, NotificationReadEvent, NotificationsReadAllEvent } from '@/types/notifications';
 
 interface XerroWebSocketContextValue {
@@ -20,6 +20,12 @@ interface XerroWebSocketContextValue {
   subscribeToNotificationRead: (callback: (event: NotificationReadEvent) => void) => () => void;
   subscribeToNotificationUnread: (callback: (event: NotificationReadEvent) => void) => () => void;
   subscribeToNotificationsReadAll: (callback: (event: NotificationsReadAllEvent) => void) => () => void;
+  subscribeToMemorySessionCreated: (callback: (event: MemorySessionPayload) => void) => () => void;
+  subscribeToMemorySessionUpdated: (callback: (event: MemorySessionPayload) => void) => () => void;
+  subscribeToMemorySessionDeleted: (callback: (event: MemorySessionDeletedPayload) => void) => () => void;
+  subscribeToMemoryProjectAdded: (callback: (event: MemoryProjectPayload) => void) => () => void;
+  subscribeToMemoryProjectUpdated: (callback: (event: MemoryProjectPayload) => void) => () => void;
+  subscribeToMemoryProjectDeleted: (callback: (event: MemoryProjectPayload) => void) => () => void;
 }
 
 const XerroWebSocketContext = createContext<XerroWebSocketContextValue | undefined>(undefined);
@@ -44,6 +50,12 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
   const notificationReadCallbacksRef = useRef<Set<(event: NotificationReadEvent) => void>>(new Set());
   const notificationUnreadCallbacksRef = useRef<Set<(event: NotificationReadEvent) => void>>(new Set());
   const notificationsReadAllCallbacksRef = useRef<Set<(event: NotificationsReadAllEvent) => void>>(new Set());
+  const memorySessionCreatedCallbacksRef = useRef<Set<(event: MemorySessionPayload) => void>>(new Set());
+  const memorySessionUpdatedCallbacksRef = useRef<Set<(event: MemorySessionPayload) => void>>(new Set());
+  const memorySessionDeletedCallbacksRef = useRef<Set<(event: MemorySessionDeletedPayload) => void>>(new Set());
+  const memoryProjectAddedCallbacksRef = useRef<Set<(event: MemoryProjectPayload) => void>>(new Set());
+  const memoryProjectUpdatedCallbacksRef = useRef<Set<(event: MemoryProjectPayload) => void>>(new Set());
+  const memoryProjectDeletedCallbacksRef = useRef<Set<(event: MemoryProjectPayload) => void>>(new Set());
 
   // Track last processed bookmark event to prevent duplicate processing
   const lastBookmarkEventTimestampRef = useRef<string>('');
@@ -255,6 +267,61 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
+    // Memory events
+    socket.on('memory:session-created', (data: MemorySessionPayload) => {
+      console.log('[Xerro WebSocket] Memory session created:', data.sessionId);
+      memorySessionCreatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in memory session created callback:', error);
+        }
+      });
+    });
+
+    socket.on('memory:session-updated', (data: MemorySessionPayload) => {
+      console.log('[Xerro WebSocket] Memory session updated:', data.sessionId);
+      memorySessionUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in memory session updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('memory:session-deleted', (data: MemorySessionDeletedPayload) => {
+      console.log('[Xerro WebSocket] Memory session deleted:', data.sessionId);
+      memorySessionDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in memory session deleted callback:', error);
+        }
+      });
+    });
+
+    socket.on('memory:project-added', (data: MemoryProjectPayload) => {
+      console.log('[Xerro WebSocket] Memory project added:', data.name);
+      memoryProjectAddedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in memory project added callback:', error);
+        }
+      });
+    });
+
+    socket.on('memory:project-updated', (data: MemoryProjectPayload) => {
+      console.log('[Xerro WebSocket] Memory project updated:', data.name);
+      memoryProjectUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in memory project updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('memory:project-deleted', (data: MemoryProjectPayload) => {
+      console.log('[Xerro WebSocket] Memory project deleted:', data.name);
+      memoryProjectDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in memory project deleted callback:', error);
+        }
+      });
+    });
+
     // Cleanup on unmount
     return () => {
       socket.close();
@@ -371,6 +438,36 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     return () => { notificationsReadAllCallbacksRef.current.delete(callback); };
   }, []);
 
+  const subscribeToMemorySessionCreated = useCallback((callback: (event: MemorySessionPayload) => void) => {
+    memorySessionCreatedCallbacksRef.current.add(callback);
+    return () => { memorySessionCreatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMemorySessionUpdated = useCallback((callback: (event: MemorySessionPayload) => void) => {
+    memorySessionUpdatedCallbacksRef.current.add(callback);
+    return () => { memorySessionUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMemorySessionDeleted = useCallback((callback: (event: MemorySessionDeletedPayload) => void) => {
+    memorySessionDeletedCallbacksRef.current.add(callback);
+    return () => { memorySessionDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMemoryProjectAdded = useCallback((callback: (event: MemoryProjectPayload) => void) => {
+    memoryProjectAddedCallbacksRef.current.add(callback);
+    return () => { memoryProjectAddedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMemoryProjectUpdated = useCallback((callback: (event: MemoryProjectPayload) => void) => {
+    memoryProjectUpdatedCallbacksRef.current.add(callback);
+    return () => { memoryProjectUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMemoryProjectDeleted = useCallback((callback: (event: MemoryProjectPayload) => void) => {
+    memoryProjectDeletedCallbacksRef.current.add(callback);
+    return () => { memoryProjectDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
   const value: XerroWebSocketContextValue = {
     isConnected,
     subscribeToAgentStatus,
@@ -388,6 +485,12 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     subscribeToNotificationRead,
     subscribeToNotificationUnread,
     subscribeToNotificationsReadAll,
+    subscribeToMemorySessionCreated,
+    subscribeToMemorySessionUpdated,
+    subscribeToMemorySessionDeleted,
+    subscribeToMemoryProjectAdded,
+    subscribeToMemoryProjectUpdated,
+    subscribeToMemoryProjectDeleted,
   };
 
   return (

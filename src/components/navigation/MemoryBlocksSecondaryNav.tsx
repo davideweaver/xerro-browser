@@ -29,7 +29,7 @@ export function MemoryBlocksSecondaryNav({
   const isRoot = !currentFolder;
 
   // At root: fetch system files and reference subfolders in parallel
-  const { data: systemData, refetch: refetchSystem } = useQuery({
+  const { refetch: refetchSystem } = useQuery({
     queryKey: ["memory-blocks-nav", "system"],
     queryFn: () => memoryBlocksService.listBlocks("system", 1),
     enabled: isRoot,

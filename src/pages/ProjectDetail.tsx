@@ -11,7 +11,6 @@ import { useDeleteTodoConfirmation } from "@/hooks/use-delete-todo-confirmation"
 import Container from "@/components/container/Container";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,8 +21,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { ProjectTimelineBar } from "@/components/episodes/ProjectTimelineBar";
-import { TimelineBar } from "@/components/episodes/TimelineBar";
-import { format, parseISO, differenceInMinutes } from "date-fns";
+import { SessionRow } from "@/components/episodes/SessionRow";
+import { format, parseISO } from "date-fns";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import type { XerroSession, XerroMemoryBlock } from "@/types/xerroProjects";
 
@@ -396,12 +395,16 @@ export default function ProjectDetail() {
               <div className="space-y-4">
                 {allSessions.map((session, idx) => (
                   <div key={session.id}>
-                    <XerroSessionRow
+                    <SessionRow
                       session={session}
-                      onClick={() =>
+                      showProject={false}
+                      onSessionClick={(id) =>
                         navigate(
-                          `/project/${encodeURIComponent(projectName)}/sessions/${encodeURIComponent(session.id)}`
+                          `/project/${encodeURIComponent(projectName)}/sessions/${encodeURIComponent(id)}`
                         )
+                      }
+                      onSessionDeleted={(id) =>
+                        setAllSessions(prev => prev.filter(s => s.id !== id))
                       }
                     />
                     {idx < allSessions.length - 1 && <Separator className="mt-4" />}
@@ -511,84 +514,3 @@ export default function ProjectDetail() {
   );
 }
 
-// Session row styled like the original SessionRow but using XerroSession fields
-function XerroSessionRow({
-  session,
-  onClick,
-}: {
-  session: XerroSession;
-  onClick: () => void;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const startDate = parseISO(session.startedAt);
-  const endDate = parseISO(session.lastMessageAt);
-  const sameDay = format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd");
-  const timeRange = `${format(startDate, "h:mm a")} - ${format(endDate, "h:mm a")}`;
-
-  const durationMins = differenceInMinutes(endDate, startDate);
-  const hours = Math.floor(durationMins / 60);
-  const mins = durationMins % 60;
-  const duration = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-
-  const dateInfo = !sameDay ? `Started ${format(startDate, "MMM d")}` : null;
-
-  // Parse first message preview — "[role]: content" format
-  let previewContent: { role: string; content: string } | null = null;
-  if (session.firstMessagePreview) {
-    const match = session.firstMessagePreview.match(/^\[(.+?)\]:\s*(.+)$/s);
-    if (match) {
-      previewContent = { role: match[1].trim(), content: match[2].trim() };
-    }
-  }
-
-  return (
-    <div
-      className="bg-background py-2 cursor-pointer hover:bg-muted/50 rounded-lg transition-colors relative"
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {session.description && (
-        <p className="text-sm text-foreground mt-2">{session.description}</p>
-      )}
-
-      {/* First message preview bubble */}
-      {previewContent && (
-        <div className="mt-2 flex justify-end">
-          <div className="bg-muted text-foreground px-3 py-2 rounded-2xl text-xs max-w-[80%]">
-            <span className="line-clamp-2">{previewContent.content}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Timeline Bar */}
-      <div className="mt-3">
-        <TimelineBar
-          startTime={session.startedAt}
-          endTime={session.lastMessageAt}
-          showHourMarkers={true}
-          showTimeLabels={false}
-        />
-      </div>
-
-      <p className="text-xs text-muted-foreground mt-1">
-        {timeRange} ({duration})
-        {dateInfo && ` • ${dateInfo}`} • {session.messageCount} message
-        {session.messageCount !== 1 ? "s" : ""}
-        {session.externalSource && ` • `}
-        {session.externalSource && (
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 ml-0.5">
-            {session.externalSource}
-          </Badge>
-        )}
-      </p>
-
-      {isHovered && (
-        <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/90 px-2 py-1 rounded">
-          {format(startDate, "MMM d, yyyy")}
-        </div>
-      )}
-    </div>
-  );
-}

@@ -1,8 +1,8 @@
-import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
-import { graphitiService } from "@/api/graphitiService";
-import { useGraphiti } from "@/context/GraphitiContext";
+import { xerroProjectsService } from "@/api/xerroProjectsService";
+import { useMemorySessionChanges } from "@/hooks/use-memory-session-changes";
 import Container from "@/components/container/Container";
 import { Button } from "@/components/ui/button";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
@@ -32,23 +32,22 @@ import {
   subDays,
   parse,
 } from "date-fns";
-import type { Session } from "@/types/graphiti";
+import type { XerroSession } from "@/types/xerroProjects";
 
 export default function Sessions() {
-  const { groupId } = useGraphiti();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { projectName } = useParams<{ projectName?: string }>();
   const decodedProjectName = projectName
     ? decodeURIComponent(projectName)
     : undefined;
+  const queryClient = useQueryClient();
 
   // Initialize selected date from query string or default to today
   const [selectedDate, setSelectedDate] = useState(() => {
     const dateParam = searchParams.get("date");
     if (dateParam) {
       try {
-        // Parse date string in local timezone using date-fns
         const parsed = parse(dateParam, "yyyy-MM-dd", new Date());
         return isNaN(parsed.getTime())
           ? startOfDay(new Date())
@@ -62,9 +61,9 @@ export default function Sessions() {
 
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [groupByProject, setGroupByProject] = useState(
-    () => localStorage.getItem("sessions-group-by-project") !== "false", // Default to grouped
+    () => localStorage.getItem("sessions-group-by-project") !== "false",
   );
-  const [openProjects, setOpenProjects] = useState<Set<string>>(new Set()); // Track open projects
+  const [openProjects, setOpenProjects] = useState<Set<string>>(new Set());
   const [deletedSessionIds, setDeletedSessionIds] = useState<Set<string>>(new Set());
 
   // Update query string when date changes
@@ -73,51 +72,50 @@ export default function Sessions() {
     setSearchParams({ date: dateString }, { replace: true });
   }, [selectedDate, setSearchParams]);
 
-  // Reset to today when graph changes
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedDate(startOfDay(new Date()));
-    setOpenProjects(new Set());
-  }, [groupId]);
-
-  // Calculate date range for stats API query (DayNavigation calendar)
   const rangeStartDate = startOfDay(subDays(selectedDate, 30)).toISOString();
   const rangeEndDate = endOfDay(addDays(selectedDate, 30)).toISOString();
 
-  // Fetch all sessions WITHOUT date filters to get true first/last episode dates
-  // Date filtering happens on the frontend to avoid backend returning filtered dates
-  // Filter by project if projectName is provided from route params
+  const queryKey = ["sessions", decodedProjectName];
+
   const { data: sessionsResponse, isLoading } = useQuery({
-    queryKey: ["sessions", groupId, decodedProjectName],
+    queryKey,
     queryFn: async () => {
-      // Paginate through all sessions - backend has a hard max of 500 per request
-      const allSessions: Session[] = [];
+      const allSessions: XerroSession[] = [];
       let cursor: string | undefined = undefined;
 
       do {
-        const response = await graphitiService.listSessions(
-          groupId,
-          500,
+        const response = await xerroProjectsService.listSessions({
+          projectName: decodedProjectName,
+          limit: 500,
           cursor,
-          undefined, // search
-          decodedProjectName, // projectName - filter when viewing project-specific sessions
-          undefined, // createdAfter
-          undefined, // createdBefore
-          undefined, // validAfter (don't filter - we need true session dates!)
-          undefined, // validBefore (don't filter - we need true session dates!)
-          "desc", // sortOrder
-        );
+          order: "desc",
+        });
         allSessions.push(...response.sessions);
-        cursor = response.cursor ?? undefined;
-        if (!response.has_more) break;
+        cursor = response.nextCursor;
+        if (!response.hasMore) break;
       } while (cursor);
 
-      return { sessions: allSessions, total: allSessions.length, has_more: false, cursor: null };
+      return { sessions: allSessions };
     },
   });
 
+  // Invalidate sessions when xerro WS events arrive
+  const invalidateSessions = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey });
+  }, [queryClient, queryKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle calendar date selection
+  useMemorySessionChanges({
+    onSessionCreated: invalidateSessions,
+    onSessionUpdated: invalidateSessions,
+    onSessionDeleted: (event) => {
+      // Optimistically remove from local deleted set; also refetch to stay in sync
+      setDeletedSessionIds((prev) => new Set([...prev, event.sessionId]));
+    },
+    onProjectAdded: invalidateSessions,
+    onProjectUpdated: invalidateSessions,
+    onProjectDeleted: invalidateSessions,
+  });
+
   const handleCalendarSelect = (date: Date | undefined) => {
     if (date) {
       const normalizedDate = startOfDay(date);
@@ -134,7 +132,6 @@ export default function Sessions() {
 
   const viewSessionDetail = (sessionId: string) => {
     const dateString = format(selectedDate, "yyyy-MM-dd");
-    // Navigate to project-specific or memory-specific session detail based on context
     if (decodedProjectName) {
       navigate(
         `/project/${encodeURIComponent(decodedProjectName)}/sessions/${encodeURIComponent(sessionId)}?date=${dateString}`,
@@ -167,12 +164,9 @@ export default function Sessions() {
     if (!sessionsResponse?.sessions) return new Map<string, number>();
 
     const stats = new Map<string, number>();
-
     sessionsResponse.sessions.forEach((session) => {
-      // Convert UTC timestamp to local date
-      const lastEpisodeDate = new Date(session.last_episode_date);
-      const localDateString = format(lastEpisodeDate, "yyyy-MM-dd");
-
+      const lastMessageDate = new Date(session.lastMessageAt);
+      const localDateString = format(lastMessageDate, "yyyy-MM-dd");
       stats.set(localDateString, (stats.get(localDateString) || 0) + 1);
     });
 
@@ -186,12 +180,9 @@ export default function Sessions() {
     const selectedDateString = format(selectedDate, "yyyy-MM-dd");
 
     return sessionsResponse.sessions.filter((session) => {
-      // Exclude sessions that were deleted locally
-      if (deletedSessionIds.has(session.session_id)) return false;
-      // Convert UTC timestamp to local date for comparison
-      // This ensures sessions are grouped by when they occurred in the user's timezone
-      const lastEpisodeDate = new Date(session.last_episode_date);
-      const localDateString = format(lastEpisodeDate, "yyyy-MM-dd");
+      if (deletedSessionIds.has(session.id)) return false;
+      const lastMessageDate = new Date(session.lastMessageAt);
+      const localDateString = format(lastMessageDate, "yyyy-MM-dd");
       return localDateString === selectedDateString;
     });
   }, [sessionsResponse, selectedDate, deletedSessionIds]);
@@ -200,18 +191,16 @@ export default function Sessions() {
   const groupedSessions = useMemo(() => {
     if (!groupByProject) return null;
 
-    const groups = new Map<string, Session[]>();
+    const groups = new Map<string, XerroSession[]>();
 
     filteredSessions.forEach((session) => {
-      const projectName = session.project_name || "Unknown Project";
-
-      if (!groups.has(projectName)) {
-        groups.set(projectName, []);
+      const project = session.projectName || "Unknown Project";
+      if (!groups.has(project)) {
+        groups.set(project, []);
       }
-      groups.get(projectName)!.push(session);
+      groups.get(project)!.push(session);
     });
 
-    // Sort projects alphabetically, but put "Unknown Project" at the end
     return Array.from(groups.entries()).sort(([a], [b]) => {
       if (a === "Unknown Project") return 1;
       if (b === "Unknown Project") return -1;
@@ -228,7 +217,6 @@ export default function Sessions() {
     }
   }, [groupedSessions]);
 
-  // Toolbar buttons for Container tools
   const calendarTools = (
     <div className="flex gap-2">
       <ContainerToolToggle
@@ -355,7 +343,7 @@ export default function Sessions() {
                       <CollapsibleContent>
                         <div className="space-y-4 mt-3">
                           {sessions.map((session, sessionIndex) => (
-                            <div key={session.session_id}>
+                            <div key={session.id}>
                               <SessionRow
                                 session={session}
                                 showProject={false}
@@ -378,7 +366,7 @@ export default function Sessions() {
           {!isLoading && filteredSessions.length > 0 && !groupByProject && (
             <div className="space-y-4">
               {filteredSessions.map((session, sessionIndex) => (
-                <div key={session.session_id}>
+                <div key={session.id}>
                   <SessionRow
                     session={session}
                     showProject={true}

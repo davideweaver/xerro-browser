@@ -191,6 +191,24 @@ export interface TodoChangeEvent {
   timestamp: string;
 }
 
+export interface MemorySessionPayload {
+  sessionId: string;
+  projectName?: string;
+  projectPath?: string;
+}
+
+export interface MemorySessionDeletedPayload {
+  sessionId: string;
+  deletedAt: string;
+}
+
+export interface MemoryProjectPayload {
+  name: string;
+  projectPath?: string;
+  sessionCount?: number;
+  lastTurnAt?: string;
+}
+
 export interface XerroWebSocketEvents {
   'events:list': (events: string[]) => void;
   'scheduled-tasks:agent-status': (data: AgentStatusEvent) => void;
@@ -204,6 +222,12 @@ export interface XerroWebSocketEvents {
   'todos:todo-created': (data: TodoChangeEvent) => void;
   'todos:todo-updated': (data: TodoChangeEvent) => void;
   'todos:todo-deleted': (data: TodoChangeEvent) => void;
+  'memory:session-created': (data: MemorySessionPayload) => void;
+  'memory:session-updated': (data: MemorySessionPayload) => void;
+  'memory:session-deleted': (data: MemorySessionDeletedPayload) => void;
+  'memory:project-added': (data: MemoryProjectPayload) => void;
+  'memory:project-updated': (data: MemoryProjectPayload) => void;
+  'memory:project-deleted': (data: MemoryProjectPayload) => void;
   connect: () => void;
   disconnect: () => void;
   connect_error: (error: Error) => void;

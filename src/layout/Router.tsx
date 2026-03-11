@@ -92,7 +92,7 @@ const Router = createBrowserRouter(
       />
       <Route
         path="/memory/sessions/:sessionId"
-        lazy={lazyImportComponent(() => import("@/pages/SessionDetail"))}
+        lazy={lazyImportComponent(() => import("@/pages/XerroSessionDetail"))}
       />
       <Route
         path="/memory/add"

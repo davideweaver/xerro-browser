@@ -221,6 +221,39 @@ class XerroProjectsService {
       return null;
     }
   }
+
+  async getSessionSummary(sessionId: string): Promise<string | null> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}/summary`
+      );
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error(`Failed to fetch session summary: ${response.statusText}`);
+      return await response.text();
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteSession(sessionId: string): Promise<{ ok: boolean }> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete session: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to delete session";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    }
+  }
 }
 
 export const xerroProjectsService = new XerroProjectsService();
