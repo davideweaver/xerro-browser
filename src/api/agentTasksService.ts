@@ -165,7 +165,7 @@ class AgentTasksService {
     }
   }
 
-  async triggerTask(id: string, withTrace: boolean = false): Promise<TaskExecution> {
+  async triggerTask(id: string, withTrace: boolean = false): Promise<void> {
     try {
       // Enable trace by updating task properties temporarily
       if (withTrace) {
@@ -182,30 +182,24 @@ class AgentTasksService {
       );
 
       if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
         throw new Error(
-          `Failed to trigger task: ${response.statusText}`
+          body.error || `Failed to trigger task: ${response.statusText}`
         );
       }
 
-      const execution = await response.json();
-
       toast({
         title: "Task triggered",
-        description: execution.success
-          ? "Task executed successfully"
-          : "Task execution failed",
-        variant: execution.success ? "default" : "destructive",
+        description: "Task is running — watch the activity feed for progress",
       });
 
-      // Restore original trace setting
+      // Restore original trace setting (task has already captured config, safe to update now)
       if (withTrace) {
         const task = await this.getTask(id);
         const restoredProperties = { ...task.properties };
         delete restoredProperties.trace;
         await this.updateTask(id, { properties: restoredProperties });
       }
-
-      return execution;
     } catch (error) {
       const message =
         error instanceof Error
