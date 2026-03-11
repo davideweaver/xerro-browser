@@ -35,6 +35,11 @@ export function ChatMessage({
               plan mode
             </Badge>
           )}
+          {permissionMode === 'acceptEdits' && (
+            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-blue-500/50 text-blue-500">
+              accept edits
+            </Badge>
+          )}
         </div>
       )}
       <div
