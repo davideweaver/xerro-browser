@@ -42,8 +42,14 @@ interface ToolEvent {
 // Tool names that spawn sub-agents (their child tool calls get indented under them)
 const AGENT_TOOL_NAMES = new Set(["Explore", "Plan", "Agent", "general-purpose"]);
 
+type StreamSegment =
+  | { kind: "tools"; toolIds: string[] }
+  | { kind: "thinking"; text: string }
+  | { kind: "text"; text: string };
+
 interface ExecutionData {
   toolEvents: Map<string, ToolEvent>;
+  segments?: StreamSegment[];
   durationMs?: number;
   costUsd?: number;
   model?: string;
@@ -74,14 +80,13 @@ export default function ChatSession() {
   // This allows thinking/tool cards to remain visible after the agent responds.
   const [executionData, setExecutionData] = useState<Map<string, ExecutionData>>(new Map());
 
-  const [streamingText, setStreamingText] = useState("");
-  const [streamingThinking, setStreamingThinking] = useState("");
+  const [streamingSegments, setStreamingSegments] = useState<StreamSegment[]>([]);
 
   // Refs for capturing data during streaming without adding to callback deps
   const currentExecutionIdRef = useRef<string | null>(null);
   const toolEventsRef = useRef<Map<string, ToolEvent>>(new Map());
   const completedEventRef = useRef<ChatSSEEvent | null>(null);
-  const streamingThinkingRef = useRef("");
+  const streamingSegmentsRef = useRef<StreamSegment[]>([]);
   // Tracks the toolCallId of the current active agent-type tool (for child grouping)
   const currentAgentParentRef = useRef<string | null>(null);
 
@@ -141,12 +146,26 @@ export default function ChatSession() {
           costUsd: msg.metadata.costUsd,
           model: msg.metadata.model,
           isLocal: msg.metadata.isLocal,
-          thinkingText: undefined, // Thinking text not persisted yet
+          thinkingText: msg.metadata.thinkingText,
         });
       }
     }
 
-    setExecutionData(newExecutionData);
+    // Merge: preserve in-memory segments/thinking for entries already in state
+    setExecutionData((prev) => {
+      const next = new Map(newExecutionData);
+      for (const [id, incoming] of newExecutionData) {
+        const existing = prev.get(id);
+        if (existing) {
+          next.set(id, {
+            ...incoming,
+            segments: existing.segments ?? incoming.segments,
+            thinkingText: existing.thinkingText ?? incoming.thinkingText,
+          });
+        }
+      }
+      return next;
+    });
   }, [messages]);
 
   const handleEvent = useCallback((event: ChatSSEEvent) => {
@@ -179,6 +198,15 @@ export default function ChatSession() {
       if (AGENT_TOOL_NAMES.has(event.toolName!) && !currentAgentParentRef.current && !event.parentToolUseId) {
         currentAgentParentRef.current = event.toolCallId!;
       }
+      // Add toolCallId to segments — append to last tools segment, or start a new one
+      setStreamingSegments((prev) => {
+        const last = prev[prev.length - 1];
+        const next = last?.kind === "tools"
+          ? [...prev.slice(0, -1), { kind: "tools" as const, toolIds: [...last.toolIds, event.toolCallId!] }]
+          : [...prev, { kind: "tools" as const, toolIds: [event.toolCallId!] }];
+        streamingSegmentsRef.current = next;
+        return next;
+      });
     }
 
     if (event.type === "tool_result" && event.toolCallId) {
@@ -203,13 +231,23 @@ export default function ChatSession() {
     }
 
     if (event.type === "assistant_text" && event.text) {
-      setStreamingText((prev) => prev + event.text);
+      setStreamingSegments((prev) => {
+        const last = prev[prev.length - 1];
+        const next = last?.kind === "text"
+          ? [...prev.slice(0, -1), { kind: "text" as const, text: last.text + event.text! }]
+          : [...prev, { kind: "text" as const, text: event.text! }];
+        streamingSegmentsRef.current = next;
+        return next;
+      });
     }
 
     if (event.type === "thinking" && event.thinking) {
-      setStreamingThinking((prev) => {
-        const next = prev ? prev + "\n\n" + event.thinking! : event.thinking!;
-        streamingThinkingRef.current = next;
+      setStreamingSegments((prev) => {
+        const last = prev[prev.length - 1];
+        const next = last?.kind === "thinking"
+          ? [...prev.slice(0, -1), { kind: "thinking" as const, text: last.text + "\n\n" + event.thinking! }]
+          : [...prev, { kind: "thinking" as const, text: event.thinking! }];
+        streamingSegmentsRef.current = next;
         return next;
       });
     }
@@ -220,21 +258,24 @@ export default function ChatSession() {
     const executionId = currentExecutionIdRef.current;
     const capturedTools = new Map(toolEventsRef.current);
     const completed = completedEventRef.current;
-    const capturedThinking = streamingThinkingRef.current;
+    const capturedSegments = streamingSegmentsRef.current;
+    const capturedThinking = capturedSegments
+      .filter((s) => s.kind === "thinking")
+      .map((s) => (s as { kind: "thinking"; text: string }).text)
+      .join("\n\n") || undefined;
 
     // Reset refs
     currentExecutionIdRef.current = null;
     toolEventsRef.current = new Map();
     completedEventRef.current = null;
-    streamingThinkingRef.current = "";
+    streamingSegmentsRef.current = [];
     currentAgentParentRef.current = null;
 
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
     setStreamingEvents([]);
     setToolEvents(new Map());
-    setStreamingText("");
-    setStreamingThinking("");
+    setStreamingSegments([]);
 
     await refetchMessages();
 
@@ -244,11 +285,12 @@ export default function ChatSession() {
         const next = new Map(prev);
         next.set(executionId, {
           toolEvents: capturedTools,
+          segments: capturedSegments,
           durationMs: completed?.durationMs,
           costUsd: completed?.costUsd,
           model: completed?.model,
           isLocal: completed?.isLocal,
-          thinkingText: capturedThinking || undefined,
+          thinkingText: capturedThinking,
         });
         return next;
       });
@@ -267,11 +309,13 @@ export default function ChatSession() {
     currentExecutionIdRef.current = null;
     toolEventsRef.current = new Map();
     completedEventRef.current = null;
+    streamingSegmentsRef.current = [];
     currentAgentParentRef.current = null;
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
     setStreamingEvents([]);
     setToolEvents(new Map());
+    setStreamingSegments([]);
     toast.error(`Chat error: ${error}`);
   }, []);
 
@@ -296,6 +340,7 @@ export default function ChatSession() {
     setOptimisticIsPlanMode(planMode);
     setStreamingEvents([]);
     setToolEvents(new Map());
+    setStreamingSegments([]);
     scrollToBottom();
 
     await sendMessage(content, planMode);
@@ -310,6 +355,7 @@ export default function ChatSession() {
     setOptimisticIsPlanMode(false);
     setStreamingEvents([]);
     setToolEvents(new Map());
+    setStreamingSegments([]);
     scrollToBottom();
     await sendMessage("Looks good, proceed", false);
   };
@@ -395,8 +441,24 @@ export default function ChatSession() {
                 <div key={msg.id}>
                   {msg.role === "assistant" && execData && (
                     <div className="space-y-0.5 mb-1.5">
-                      <ThinkingCard execData={execData} />
-                      <ToolEventsSection toolEvents={execData.toolEvents} />
+                      {execData.segments ? (
+                        execData.segments.filter((s) => s.kind !== "text").map((seg, i) => {
+                          if (seg.kind === "tools") {
+                            const segTools = new Map(
+                              seg.toolIds
+                                .filter((id) => execData.toolEvents.has(id))
+                                .map((id) => [id, execData.toolEvents.get(id)!])
+                            );
+                            return <ToolEventsSection key={i} toolEvents={segTools} />;
+                          }
+                          return <ThinkingSegmentCard key={i} text={seg.text} />;
+                        })
+                      ) : (
+                        <>
+                          <ThinkingCard execData={execData} />
+                          <ToolEventsSection toolEvents={execData.toolEvents} />
+                        </>
+                      )}
                     </div>
                   )}
                   <MessageBubble message={msg} />
@@ -408,7 +470,6 @@ export default function ChatSession() {
             {optimisticUserMsg && (
               <div className="space-y-1">
                 <div className="bg-accent/40 px-4 py-2.5 rounded-md">
-                  <p className="text-xs text-muted-foreground mb-1 font-semibold">You</p>
                   <div className="whitespace-pre-wrap">{optimisticUserMsg}</div>
                 </div>
                 {optimisticIsPlanMode && (
@@ -438,22 +499,31 @@ export default function ChatSession() {
               </div>
             )}
 
-            {/* Live streaming: tool events + thinking + streaming text */}
+            {/* Live streaming: interleaved segments in arrival order */}
             {isActiveSession && (
               <div className="space-y-1.5">
-                <ToolEventsSection toolEvents={toolEvents} />
-                {/* Live assistant text */}
-                {streamingText && (
-                  <div className="py-2">
-                    <div className="prose prose-sm dark:prose-invert max-w-none font-mono opacity-80">
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {streamingText}
-                      </ReactMarkdown>
+                {streamingSegments.map((seg, i) => {
+                  const isLast = i === streamingSegments.length - 1;
+                  if (seg.kind === "tools") {
+                    const segTools = new Map(
+                      seg.toolIds
+                        .filter((id) => toolEvents.has(id))
+                        .map((id) => [id, toolEvents.get(id)!])
+                    );
+                    return <ToolEventsSection key={i} toolEvents={segTools} />;
+                  }
+                  if (seg.kind === "thinking") {
+                    return <ThinkingSegmentCard key={i} text={seg.text} isLive={isLast} />;
+                  }
+                  // text segment
+                  return (
+                    <div key={i} className="py-2">
+                      <div className="prose prose-sm dark:prose-invert max-w-none font-mono opacity-80">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg.text}</ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {/* Thinking indicator — always at the bottom, disappears when stream ends */}
-                <LiveThinkingCard thinkingText={streamingThinking} />
+                  );
+                })}
               </div>
             )}
           </div>
@@ -541,7 +611,6 @@ function MessageBubble({ message }: { message: XerroChatMessage }) {
   if (isUser) {
     return (
       <div className="bg-accent/40 px-4 py-2.5 rounded-md">
-        <p className="text-xs text-muted-foreground mb-1 font-semibold">You</p>
         <div className="whitespace-pre-wrap">{message.content}</div>
         <div className="text-xs text-muted-foreground mt-1 opacity-60">{timestamp}</div>
       </div>
@@ -614,7 +683,7 @@ function ThinkingCard({ execData }: { execData: ExecutionData }) {
   );
 }
 
-function LiveThinkingCard({ thinkingText }: { thinkingText: string }) {
+function ThinkingSegmentCard({ text, isLive }: { text: string; isLive?: boolean }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -623,17 +692,17 @@ function LiveThinkingCard({ thinkingText }: { thinkingText: string }) {
         className="flex items-center gap-1.5 hover:opacity-80"
         onClick={() => setExpanded((v) => !v)}
       >
-        <Brain className="h-3 w-3 animate-pulse" />
-        <span>Thinking…</span>
+        <Brain className={`h-3 w-3 ${isLive ? "animate-pulse" : ""}`} />
+        <span>Thinking{isLive ? "…" : ""}</span>
         {expanded ? (
           <ChevronDown className="h-3 w-3" />
         ) : (
           <ChevronRight className="h-3 w-3" />
         )}
       </button>
-      {expanded && thinkingText && (
+      {expanded && text && (
         <div className="mt-1 ml-4 whitespace-pre-wrap opacity-70 max-h-48 overflow-y-auto border-l pl-2">
-          {thinkingText}
+          {text}
         </div>
       )}
     </div>

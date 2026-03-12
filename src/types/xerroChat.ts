@@ -44,6 +44,7 @@ export interface XerroChatMessage {
     resultType?: 'completed' | 'cancelled' | 'error';
     error?: string;
     toolCalls?: XerroToolCall[];
+    thinkingText?: string;
   };
 }
 
