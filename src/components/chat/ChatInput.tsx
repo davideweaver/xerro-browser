@@ -1,4 +1,3 @@
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send } from "lucide-react";
@@ -42,14 +41,14 @@ export default function ChatInput({
 
   return (
     <div className="border-t p-4 space-y-2 bg-background">
-      <Textarea
+      <textarea
         placeholder="Type your message... (Shift+Enter for new line)"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleKeyDown}
         disabled={disabled}
         rows={3}
-        className="resize-none"
+        className="w-full resize-none bg-background border-0 rounded-md shadow-none outline-none focus:outline-none placeholder:text-muted-foreground text-sm px-3 py-2 disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       <div className="flex justify-between items-center gap-2">

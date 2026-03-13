@@ -6,6 +6,7 @@ import { chatService } from "@/api/chatService";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import type { ChatSSEEvent, XerroChatMessage } from "@/types/xerroChat";
 import Container from "@/components/container/Container";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ export default function ChatSession() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [planMode, setPlanMode] = useState(false);
@@ -116,9 +118,7 @@ export default function ChatSession() {
   const messages = messagesData?.messages ?? [];
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    bottomRef.current?.scrollIntoView({ behavior: "instant" });
   };
 
   useEffect(() => {
@@ -542,6 +542,8 @@ export default function ChatSession() {
     }
   };
 
+  const isMobile = useIsMobile();
+
   const sessionLabel = session
     ? [
         session.config.cwd && session.config.cwd.split("/").pop(),
@@ -556,14 +558,14 @@ export default function ChatSession() {
       <Container
         title={session?.name ?? "Chat"}
         description={sessionLabel}
-        content="fixed"
         bodyHorzPadding={0}
+        content={isMobile ? undefined : "fixed"}
       >
         <div className="flex flex-col h-full">
           {/* Messages area */}
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto px-6 py-4 space-y-4 font-mono" style={{ fontSize: "13px" }}
+            className={`flex-1 overflow-y-auto px-6 py-4 space-y-4 font-mono ${isMobile ? "pb-40" : ""}`} style={{ fontSize: "13px" }}
           >
             {messages.length === 0 && !isActiveSession && !optimisticUserMsg && (
               <div className="text-center text-muted-foreground py-12">
@@ -694,10 +696,14 @@ export default function ChatSession() {
                 </div>
               );
             })()}
+            <div ref={bottomRef} />
           </div>
 
           {/* Input area */}
-          <div className="px-4 pt-4 space-y-2 bg-background" style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}>
+          <div
+            className={`px-4 bg-background ${isMobile ? "fixed bottom-0 left-0 right-0 z-20 pt-0" : "pt-4 space-y-2"}`}
+            style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
+          >
             {/* Hidden file input */}
             <input
               ref={fileInputRef}
@@ -725,7 +731,7 @@ export default function ChatSession() {
               onPaste={handlePaste}
               disabled={isActiveSession}
               rows={3}
-              className="resize-none"
+              className="resize-none bg-transparent border-0 border-t border-t-white/20 rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-white/30"
             />
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1">
