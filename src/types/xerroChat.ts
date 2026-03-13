@@ -44,6 +44,16 @@ export interface XerroChatMessage {
   };
 }
 
+export interface ChatSessionSearchResult {
+  chatSessionId: string;
+  description: string;
+  score: number;
+  excerpt: string;
+  startedAt: string;
+  lastMessageAt: string;
+  messageCount: number;
+}
+
 export interface ChatSSEEvent {
   type: 'started' | 'tool_use' | 'tool_result' | 'assistant_text' | 'thinking' | 'completed' | 'error' | 'cancelled' | 'plan_ready';
   executionId: string;

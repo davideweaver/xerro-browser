@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { chatService } from "@/api/chatService";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import {
@@ -10,7 +10,7 @@ import {
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
 import { NewChatDialog } from "@/components/chat-sessions/NewChatDialog";
-import { Plus, RefreshCw, MessageSquare } from "lucide-react";
+import { Plus, RefreshCw, MessageSquare, Search } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface ChatSecondaryNavProps {
@@ -25,6 +25,7 @@ export function ChatSecondaryNav({
   onSessionSelect,
 }: ChatSecondaryNavProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [newChatOpen, setNewChatOpen] = useState(false);
 
@@ -63,6 +64,13 @@ export function ChatSecondaryNav({
           <>
             <SecondaryNavToolButton onClick={() => setNewChatOpen(true)} title="New chat">
               <Plus size={20} />
+            </SecondaryNavToolButton>
+            <SecondaryNavToolButton
+              onClick={() => onNavigate("/chat/search")}
+              title="Search chats"
+              className={location.pathname === "/chat/search" ? "bg-accent text-accent-foreground" : ""}
+            >
+              <Search size={18} />
             </SecondaryNavToolButton>
             <SecondaryNavToolButton onClick={handleRefresh} title="Refresh sessions">
               <RefreshCw size={18} />

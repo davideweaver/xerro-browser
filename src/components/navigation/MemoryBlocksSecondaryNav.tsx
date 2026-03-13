@@ -6,7 +6,7 @@ import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { SecondaryNavItemTitle } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
-import { ChevronLeft, Folder, FileText, RefreshCw, Search, History, LayoutDashboard } from "lucide-react";
+import { ChevronLeft, Folder, FileText, RefreshCw, Search, History, LayoutDashboard, Brain } from "lucide-react";
 import { toast } from "sonner";
 
 interface MemoryBlocksSecondaryNavProps {
@@ -26,15 +26,9 @@ export function MemoryBlocksSecondaryNav({
 }: MemoryBlocksSecondaryNavProps) {
   const { pathname } = useLocation();
   const isOverviewActive = pathname.startsWith("/memory/overview");
+  const isSystemActive = pathname.startsWith("/memory/system");
   const isSessionsActive = pathname.startsWith("/memory/sessions");
   const isRoot = !currentFolder;
-
-  // At root: fetch system files and reference subfolders in parallel
-  const { refetch: refetchSystem } = useQuery({
-    queryKey: ["memory-blocks-nav", "system"],
-    queryFn: () => memoryBlocksService.listBlocks("system", 1),
-    enabled: isRoot,
-  });
 
   const { data: referenceData, refetch: refetchReference } = useQuery({
     queryKey: ["memory-blocks-nav", "reference"],
@@ -51,7 +45,6 @@ export function MemoryBlocksSecondaryNav({
 
   const handleRefresh = () => {
     if (isRoot) {
-      refetchSystem();
       refetchReference();
     } else {
       refetchSubfolder();
@@ -158,6 +151,13 @@ export function MemoryBlocksSecondaryNav({
             <SecondaryNavItemTitle>Overview</SecondaryNavItemTitle>
           </SecondaryNavItem>
           <SecondaryNavItem
+            isActive={isSystemActive}
+            onClick={() => onNavigate("/memory/system")}
+          >
+            <Brain className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
+            <SecondaryNavItemTitle>Core Memory</SecondaryNavItemTitle>
+          </SecondaryNavItem>
+          <SecondaryNavItem
             isActive={isSessionsActive}
             onClick={() => onNavigate("/memory/sessions")}
           >
@@ -218,22 +218,6 @@ export function MemoryBlocksSecondaryNav({
         <div className="space-y-1">
           {isRoot ? (
             <>
-              {/* System folder */}
-              <SecondaryNavItem
-                isActive={currentFolder === "system"}
-                onClick={() => onFolderChange("system")}
-              >
-                <Folder className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
-                <SecondaryNavItemTitle>system</SecondaryNavItemTitle>
-              </SecondaryNavItem>
-
-              {/* Divider between system and reference */}
-              {referenceData && (
-                <div className="py-2 px-2">
-                  <div className="border-t border-border" />
-                </div>
-              )}
-
               {/* Reference subfolders */}
               {referenceData && renderItems(referenceData)}
             </>

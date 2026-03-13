@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import type { ChatSession, ChatSessionConfig, XerroChatMessage } from "@/types/xerroChat";
+import type { ChatSession, ChatSessionConfig, XerroChatMessage, ChatSessionSearchResult } from "@/types/xerroChat";
 
 const XERRO_SERVICE_URL = import.meta.env.VITE_XERRO_SERVICE_URL || "http://localhost:9205";
 
@@ -150,6 +150,22 @@ class ChatService {
     }
 
     return response.body.getReader();
+  }
+
+  async searchSessions(
+    query: string,
+    limit = 10
+  ): Promise<{ results: ChatSessionSearchResult[]; count: number }> {
+    try {
+      const params = new URLSearchParams({ q: query, limit: String(limit) });
+      const response = await fetch(`${this.baseUrl}/sessions/search?${params.toString()}`);
+      if (!response.ok) throw new Error(`Failed to search sessions: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to search sessions";
+      toast.error(message);
+      throw error;
+    }
   }
 
   async cancelMessage(sessionId: string): Promise<{ success: true; executionId: string }> {
