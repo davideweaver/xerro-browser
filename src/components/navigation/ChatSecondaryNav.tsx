@@ -70,7 +70,7 @@ export function ChatSecondaryNav({
               title="Search chats"
               className={location.pathname === "/chat/search" ? "bg-accent text-accent-foreground" : ""}
             >
-              <Search size={18} />
+              <Search size={22} />
             </SecondaryNavToolButton>
             <SecondaryNavToolButton onClick={handleRefresh} title="Refresh sessions">
               <RefreshCw size={18} />
