@@ -44,3 +44,23 @@ export interface MemoryBlockSearchResponse {
   results: MemoryBlockSearchResult[];
   count: number;
 }
+
+export interface MemoryStats {
+  totalBlocks: number;
+  totalTokens: number;
+  coreBlocks: number;
+  referenceBlocks: number;
+  historyBlocks: number;
+  gitStatus: {
+    dirty: boolean;
+    aheadOfRemote: boolean;
+    summary: string;
+    uncommittedFiles?: string[];
+  };
+  reflection?: {
+    enabled: boolean;
+    threshold: number;
+    model: string;
+    counters: Record<string, number>;
+  };
+}

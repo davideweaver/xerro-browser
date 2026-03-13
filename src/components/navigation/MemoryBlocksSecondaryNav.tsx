@@ -6,7 +6,7 @@ import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { SecondaryNavItemTitle } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
-import { ChevronLeft, Folder, FileText, RefreshCw, Search, History } from "lucide-react";
+import { ChevronLeft, Folder, FileText, RefreshCw, Search, History, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 interface MemoryBlocksSecondaryNavProps {
@@ -25,6 +25,7 @@ export function MemoryBlocksSecondaryNav({
   onBlockSelect,
 }: MemoryBlocksSecondaryNavProps) {
   const { pathname } = useLocation();
+  const isOverviewActive = pathname.startsWith("/memory/overview");
   const isSessionsActive = pathname.startsWith("/memory/sessions");
   const isRoot = !currentFolder;
 
@@ -138,7 +139,7 @@ export function MemoryBlocksSecondaryNav({
             <RefreshCw size={20} />
           </SecondaryNavToolButton>
           <SecondaryNavToolButton
-            onClick={() => onNavigate("/memory/blocks/search")}
+            onClick={() => onNavigate("/memory/search")}
             aria-label="Search"
           >
             <Search size={22} />
@@ -146,9 +147,16 @@ export function MemoryBlocksSecondaryNav({
         </>
       }
     >
-      {/* Sessions link - always visible, above breadcrumbs */}
+      {/* Overview + Sessions links - always visible, above breadcrumbs */}
       <div className="px-4 pb-1">
         <div className="space-y-1">
+          <SecondaryNavItem
+            isActive={isOverviewActive}
+            onClick={() => onNavigate("/memory/overview")}
+          >
+            <LayoutDashboard className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
+            <SecondaryNavItemTitle>Overview</SecondaryNavItemTitle>
+          </SecondaryNavItem>
           <SecondaryNavItem
             isActive={isSessionsActive}
             onClick={() => onNavigate("/memory/sessions")}

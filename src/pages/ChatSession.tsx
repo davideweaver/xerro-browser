@@ -404,12 +404,17 @@ export default function ChatSession() {
     thinkingStartMsRef.current = null;
     thinkingDurationMsRef.current = null;
 
+    // Clear raw events immediately (not display-affecting)
+    setStreamingEvents([]);
+
+    // Fetch persisted messages BEFORE clearing streaming display state.
+    // This prevents a blank frame where the streaming UI is gone but
+    // persisted messages haven't loaded yet.
+    await refetchMessages();
+
     setStreamingExecutionId(null);
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
-    setStreamingEvents([]);
-
-    await refetchMessages();
 
     queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
     queryClient.invalidateQueries({ queryKey: ["chat-session", sessionId] });
@@ -442,6 +447,12 @@ export default function ChatSession() {
 
   // True when streaming (POST) or reconnected stream is active for this session
   const isActiveSession = (isStreaming || isReconnecting) && streamingSessionId === sessionId;
+
+  // True when we have a streaming executionId that hasn't been persisted yet.
+  // Keeps the streaming UI visible during the refetch gap after the stream ends.
+  const streamingIsLive =
+    !!streamingExecutionId &&
+    !messages.some((m) => m.metadata?.executionId === streamingExecutionId);
 
   const handleSend = async () => {
     const content = input.trim();
@@ -636,8 +647,8 @@ export default function ChatSession() {
               );
             })}
 
-            {/* Optimistic user message */}
-            {optimisticUserMsg && (
+            {/* Optimistic user message — hide once the turn is persisted to avoid duplication */}
+            {optimisticUserMsg && (isActiveSession || streamingIsLive) && (
               <div className="space-y-1">
                 <div className="bg-accent/40 px-4 py-2.5 rounded-md">
                   <div className="whitespace-pre-wrap">{optimisticUserMsg}</div>
@@ -676,8 +687,8 @@ export default function ChatSession() {
               </div>
             )}
 
-            {/* Live streaming: uses the same executionData model as persisted messages */}
-            {isActiveSession && (() => {
+            {/* Live streaming: also shown during refetch gap (streamingIsLive) to prevent blank flash */}
+            {(isActiveSession || streamingIsLive) && (() => {
               const ed = streamingExecutionId ? executionData.get(streamingExecutionId) : undefined;
               const segments = ed?.segments ?? [];
               const hasText = segments.some((s) => s.kind === "text");

@@ -213,8 +213,8 @@ const Layout = () => {
   // System section flag
   const isSystemSection = activePrimary === "system";
 
-  // Memory Blocks section flag (sub-section of memory) - also active on /memory/sessions
-  const isMemoryBlocksSection = pathname.startsWith("/memory/blocks") || pathname.startsWith("/memory/sessions");
+  // Memory Blocks section flag (sub-section of memory) - also active on /memory/sessions and /memory/overview
+  const isMemoryBlocksSection = pathname.startsWith("/memory/blocks") || pathname.startsWith("/memory/sessions") || pathname.startsWith("/memory/overview") || pathname.startsWith("/memory/search");
   const currentMemoryBlockLabel = pathname.startsWith("/memory/blocks") ? (params["*"] || null) : null;
   const [currentMemoryFolder, setCurrentMemoryFolder] = useState<string>("");
 

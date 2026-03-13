@@ -4,6 +4,7 @@ import type {
   MemoryBlockDetail,
   MemoryBlockUpdateResponse,
   MemoryBlockSearchResponse,
+  MemoryStats,
 } from "@/types/memoryBlocks";
 
 class MemoryBlocksService {
@@ -107,6 +108,10 @@ class MemoryBlocksService {
       method: "POST",
       body: JSON.stringify({ query, directories, limit }),
     });
+  }
+
+  async getStats(): Promise<MemoryStats> {
+    return this.fetch<MemoryStats>("/api/v1/memory/stats");
   }
 }
 
