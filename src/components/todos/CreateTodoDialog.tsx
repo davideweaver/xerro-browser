@@ -7,8 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BaseDialog } from "@/components/BaseDialog";
-import ProjectSelector from "@/components/memory/ProjectSelector";
-import { useGraphiti } from "@/context/GraphitiContext";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -32,7 +30,6 @@ export function CreateTodoDialog({
   projectNameDisabled,
   todo,
 }: CreateTodoDialogProps) {
-  const { groupId } = useGraphiti();
   const isEditMode = !!todo;
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -147,10 +144,11 @@ export function CreateTodoDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="todo-project" className="text-base">Project</Label>
-            <ProjectSelector
-              value={projectName}
-              onChange={setProjectName}
-              groupId={groupId}
+            <Input
+              id="todo-project"
+              placeholder="Project name (optional)"
+              value={projectName || ""}
+              onChange={(e) => setProjectName(e.target.value || null)}
               disabled={projectNameDisabled}
               className="text-lg md:text-sm bg-input"
             />

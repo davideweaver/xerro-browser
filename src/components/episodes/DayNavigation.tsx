@@ -1,11 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { DayCard } from "./DayCard";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { addDays, startOfDay, isSameDay, format, startOfWeek } from "date-fns";
-import { graphitiService } from "@/api/graphitiService";
-import { useGraphiti } from "@/context/GraphitiContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface DayNavigationProps {
@@ -13,32 +10,18 @@ interface DayNavigationProps {
   onDateSelect: (date: Date) => void;
   onWeekChange?: (weekStart: Date) => void;
   dateRange: { start: string; end: string };
-  localStats?: Map<string, number>; // Optional: pre-computed stats in local timezone
+  localStats?: Map<string, number>; // Pre-computed stats in local timezone
 }
 
 export function DayNavigation({
   selectedDate,
   onDateSelect,
   onWeekChange,
-  dateRange,
+  dateRange: _dateRange,
   localStats,
 }: DayNavigationProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const { groupId } = useGraphiti();
   const isMobile = useIsMobile();
-
-  // Fetch session stats for the date range (only if localStats not provided)
-  const { data: statsData } = useQuery({
-    queryKey: ["session-stats-by-day", groupId, dateRange.start, dateRange.end],
-    queryFn: () => graphitiService.getSessionStatsByDay(
-      groupId,
-      undefined,
-      undefined,
-      dateRange.start,
-      dateRange.end
-    ),
-    enabled: !localStats, // Skip API call if localStats provided
-  });
 
   // Calculate the range of days to show (7 days starting with Monday)
   const [weekStartDate, setWeekStartDate] = useState(() =>
@@ -58,15 +41,7 @@ export function DayNavigation({
   // Get session count for a specific day
   const getSessionCountForDay = (date: Date) => {
     const dateString = format(date, "yyyy-MM-dd");
-
-    // Use localStats if provided, otherwise fall back to API stats
-    if (localStats) {
-      return localStats.get(dateString) || 0;
-    }
-
-    if (!statsData?.stats) return 0;
-    const stat = statsData.stats.find(s => s.date === dateString);
-    return stat?.count || 0;
+    return localStats?.get(dateString) || 0;
   };
 
   // Scroll functions - navigate by full weeks

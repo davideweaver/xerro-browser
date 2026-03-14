@@ -824,7 +824,7 @@ export default function ChatSession() {
             queryClient.invalidateQueries({ queryKey: ["chat-session", sessionId] });
             queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
           }}
-          sessionId={sessionId}
+          sessionId={sessionId!}
           initialName={session.name}
         />
       )}

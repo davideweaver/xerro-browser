@@ -63,7 +63,7 @@ export default function System() {
 
   return (
     <Container
-      title="System"
+      title="Overview"
       description="Backend service monitoring and control"
     >
       <div className="space-y-8">

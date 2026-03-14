@@ -80,7 +80,7 @@ export function PrimaryNav({
       </div>
 
       {/* Footer - UserProfileMenu */}
-      {footer && <div className="p-2">{footer}</div>}
+      {footer && <div className="p-2 flex justify-center">{footer}</div>}
     </nav>
   );
 }

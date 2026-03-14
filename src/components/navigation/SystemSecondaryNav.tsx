@@ -66,7 +66,7 @@ export function SystemSecondaryNav({
   const xerroStatus = xerroHealth?.healthy ? "healthy" : xerroHealth ? "unhealthy" : undefined;
 
   return (
-    <SecondaryNavContainer title="System">
+    <SecondaryNavContainer title="Settings">
       {/* Overview Section */}
       <div className="px-4 pb-4 space-y-1">
         <SecondaryNavItem

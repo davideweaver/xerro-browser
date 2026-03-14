@@ -1,6 +1,5 @@
 import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import { useGraphitiWebSocket } from "@/hooks/use-graphiti-websocket";
 import { useTasksRunning } from "@/hooks/use-tasks-running";
 import { useUnreadNotificationCount } from "@/hooks/use-unread-notification-count";
 import { useDocumentQueryUpdates } from "@/hooks/use-document-query-updates";
@@ -24,7 +23,6 @@ import { MobileNavTrigger } from "@/components/navigation/MobileNavTrigger";
 import { DraggableMobileNav } from "@/components/navigation/DraggableMobileNav";
 import { PrimaryNavFooter } from "@/components/navigation/PrimaryNavFooter";
 import { NotificationBadge } from "@/components/notifications/NotificationBadge";
-import { GraphManagementDialog } from "@/components/sidebar/GraphManagementDialog";
 import { navigationConfig, getActivePrimary } from "@/lib/navigationConfig";
 import {
   getCurrentFolderPath,
@@ -37,19 +35,16 @@ const Layout = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const params = useParams();
-  const { connectionState, queueSize } = useGraphitiWebSocket();
   const { isConnected: xerroIsConnected } = useXerroWebSocketContext();
   const isTasksRunning = useTasksRunning();
   const { unreadCount } = useUnreadNotificationCount();
   useDocumentQueryUpdates();
   useMemoryQueryUpdates();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const [isManageDialogOpen, setIsManageDialogOpen] = useState(false);
   const [currentFolderPath, setCurrentFolderPath] = useState<string>(() =>
     getCurrentFolderPath()
   );
 
-  const isConnected = connectionState === "connected";
   const activePrimary = getActivePrimary(pathname);
 
   // Drag-to-open state: tracks progress when swiping from left edge
@@ -276,9 +271,6 @@ const Layout = () => {
   const footer = (
     <PrimaryNavFooter
       onAfterClick={() => setMobileNavOpen(false)}
-      onOpenManageDialog={() => setIsManageDialogOpen(true)}
-      queueSize={queueSize}
-      isConnected={isConnected}
     />
   );
 
@@ -493,12 +485,6 @@ const Layout = () => {
       </div>
 
       <Toaster />
-
-      {/* Graph Management Dialog - rendered outside sidebars */}
-      <GraphManagementDialog
-        open={isManageDialogOpen}
-        onOpenChange={setIsManageDialogOpen}
-      />
     </>
   );
 };

@@ -3,16 +3,11 @@ import {
   FolderKanban,
   Brain,
   Search,
-  MessageSquare,
-  Users,
   Clock,
-  Plus,
   FileText,
   Bot,
   ListTodo,
-  Settings,
   Calendar,
-  BarChart3,
   Bell,
   BookMarked,
   MessagesSquare,
@@ -42,7 +37,6 @@ export const navigationConfig: PrimaryNavItem[] = [
     defaultPath: '/',
     secondaryItems: [
       { path: '/', icon: Calendar, label: 'Today' },
-      { path: '/home/stats', icon: BarChart3, label: 'Stats' },
       { path: '/home/notifications', icon: Bell, label: 'Notifications' }
     ]
   },
@@ -75,10 +69,7 @@ export const navigationConfig: PrimaryNavItem[] = [
     defaultPath: '/memory/overview',
     secondaryItems: [
       { path: '/memory/search', icon: Search, label: 'Search' },
-      { path: '/memory/chat', icon: MessageSquare, label: 'Chat' },
-      { path: '/memory/entities', icon: Users, label: 'Entities' },
       { path: '/memory/sessions', icon: Clock, label: 'Sessions' },
-      { path: '/memory/add', icon: Plus, label: 'Add Memory' },
       { path: '/memory/blocks', icon: BookMarked, label: 'Blocks' }
     ]
   },
@@ -96,14 +87,6 @@ export const navigationConfig: PrimaryNavItem[] = [
     label: 'Agent Tasks',
     defaultPath: '/agent-tasks/activity',
     secondaryItems: []
-  },
-  {
-    key: 'system',
-    icon: Settings,
-    iconClassName: '[&_svg]:!size-6',
-    label: 'System',
-    defaultPath: '/system',
-    secondaryItems: []
   }
 ];
 
@@ -119,7 +102,6 @@ export function getActivePrimary(pathname: string): string | null {
   // Agent Tasks routes
   if (pathname.startsWith('/chat')) return 'chat';
   if (pathname.startsWith('/agent-tasks')) return 'agent-tasks';
-  // System routes
   if (pathname.startsWith('/system')) return 'system';
   return null;
 }
