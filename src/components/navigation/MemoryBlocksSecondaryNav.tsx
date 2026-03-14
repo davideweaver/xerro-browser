@@ -52,13 +52,16 @@ export function MemoryBlocksSecondaryNav({
     toast.success("Block list refreshed");
   };
 
-  const handleBlockClick = (label: string) => {
-    const path = `/memory/blocks/${label}`;
+  const handleNavigate = (path: string) => {
     if (onBlockSelect) {
       onBlockSelect(path);
     } else {
       onNavigate(path);
     }
+  };
+
+  const handleBlockClick = (label: string) => {
+    handleNavigate(`/memory/blocks/${label}`);
   };
 
   // Back button: from reference/xxx or system go to root (skip top-level sections)
@@ -132,7 +135,7 @@ export function MemoryBlocksSecondaryNav({
             <RefreshCw size={20} />
           </SecondaryNavToolButton>
           <SecondaryNavToolButton
-            onClick={() => onNavigate("/memory/search")}
+            onClick={() => handleNavigate("/memory/search")}
             aria-label="Search"
           >
             <Search size={22} />
@@ -145,21 +148,21 @@ export function MemoryBlocksSecondaryNav({
         <div className="space-y-1">
           <SecondaryNavItem
             isActive={isOverviewActive}
-            onClick={() => onNavigate("/memory/overview")}
+            onClick={() => handleNavigate("/memory/overview")}
           >
             <LayoutDashboard className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
             <SecondaryNavItemTitle>Overview</SecondaryNavItemTitle>
           </SecondaryNavItem>
           <SecondaryNavItem
             isActive={isSystemActive}
-            onClick={() => onNavigate("/memory/system")}
+            onClick={() => handleNavigate("/memory/system")}
           >
             <Brain className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
             <SecondaryNavItemTitle>Core Memory</SecondaryNavItemTitle>
           </SecondaryNavItem>
           <SecondaryNavItem
             isActive={isSessionsActive}
-            onClick={() => onNavigate("/memory/sessions")}
+            onClick={() => handleNavigate("/memory/sessions")}
           >
             <History className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
             <SecondaryNavItemTitle>Sessions</SecondaryNavItemTitle>
