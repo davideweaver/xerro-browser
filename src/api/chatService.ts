@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/apiFetch";
 import type { ChatSession, ChatSessionConfig, XerroChatMessage, ChatSessionSearchResult } from "@/types/xerroChat";
 
 const XERRO_SERVICE_URL = import.meta.env.VITE_XERRO_SERVICE_URL || "http://localhost:9205";
@@ -12,7 +13,7 @@ class ChatService {
 
   async listSessions(): Promise<{ sessions: ChatSession[] }> {
     try {
-      const response = await fetch(`${this.baseUrl}/sessions`);
+      const response = await apiFetch(`${this.baseUrl}/sessions`);
       if (!response.ok) throw new Error(`Failed to list sessions: ${response.statusText}`);
       return await response.json();
     } catch (error) {
@@ -24,7 +25,7 @@ class ChatService {
 
   async createSession(name: string, config?: ChatSessionConfig): Promise<ChatSession> {
     try {
-      const response = await fetch(`${this.baseUrl}/sessions`, {
+      const response = await apiFetch(`${this.baseUrl}/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, config }),
@@ -40,7 +41,7 @@ class ChatService {
 
   async getSession(id: string): Promise<ChatSession> {
     try {
-      const response = await fetch(`${this.baseUrl}/sessions/${id}`);
+      const response = await apiFetch(`${this.baseUrl}/sessions/${id}`);
       if (!response.ok) throw new Error(`Failed to get session: ${response.statusText}`);
       return await response.json();
     } catch (error) {
@@ -55,7 +56,7 @@ class ChatService {
     updates: { name?: string; config?: ChatSessionConfig }
   ): Promise<ChatSession> {
     try {
-      const response = await fetch(`${this.baseUrl}/sessions/${id}`, {
+      const response = await apiFetch(`${this.baseUrl}/sessions/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
@@ -71,7 +72,7 @@ class ChatService {
 
   async deleteSession(id: string): Promise<{ success: true }> {
     try {
-      const response = await fetch(`${this.baseUrl}/sessions/${id}`, {
+      const response = await apiFetch(`${this.baseUrl}/sessions/${id}`, {
         method: "DELETE",
       });
       if (!response.ok) throw new Error(`Failed to delete session: ${response.statusText}`);
@@ -93,7 +94,7 @@ class ChatService {
       if (limit !== undefined) params.append("limit", String(limit));
       if (before) params.append("before", before);
       const qs = params.toString() ? `?${params.toString()}` : "";
-      const response = await fetch(`${this.baseUrl}/sessions/${sessionId}/messages${qs}`);
+      const response = await apiFetch(`${this.baseUrl}/sessions/${sessionId}/messages${qs}`);
       if (!response.ok) throw new Error(`Failed to get messages: ${response.statusText}`);
       return await response.json();
     } catch (error) {
@@ -133,7 +134,7 @@ class ChatService {
       headers["Content-Type"] = "application/json";
     }
 
-    const response = await fetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
+    const response = await apiFetch(`${this.baseUrl}/sessions/${sessionId}/messages`, {
       method: "POST",
       headers,
       body,
@@ -158,7 +159,7 @@ class ChatService {
   ): Promise<{ results: ChatSessionSearchResult[]; count: number }> {
     try {
       const params = new URLSearchParams({ q: query, limit: String(limit) });
-      const response = await fetch(`${this.baseUrl}/sessions/search?${params.toString()}`);
+      const response = await apiFetch(`${this.baseUrl}/sessions/search?${params.toString()}`);
       if (!response.ok) throw new Error(`Failed to search sessions: ${response.statusText}`);
       return await response.json();
     } catch (error) {
@@ -170,7 +171,7 @@ class ChatService {
 
   async cancelMessage(sessionId: string): Promise<{ success: true; executionId: string }> {
     try {
-      const response = await fetch(`${this.baseUrl}/sessions/${sessionId}/messages/cancel`, {
+      const response = await apiFetch(`${this.baseUrl}/sessions/${sessionId}/messages/cancel`, {
         method: "POST",
       });
       if (!response.ok) throw new Error(`Failed to cancel: ${response.statusText}`);

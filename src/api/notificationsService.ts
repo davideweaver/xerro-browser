@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   DirectMessageResponse,
@@ -40,7 +41,7 @@ class NotificationsService {
       }
 
       const url = `${this.baseUrl}/api/v1/notifications${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(
@@ -65,7 +66,7 @@ class NotificationsService {
 
   async getNotification(id: string): Promise<Notification> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications/${id}`
       );
 
@@ -92,7 +93,7 @@ class NotificationsService {
 
   async markAsRead(id: string): Promise<Notification> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications/${id}/read`,
         {
           method: "PUT",
@@ -122,7 +123,7 @@ class NotificationsService {
 
   async markAsUnread(id: string): Promise<Notification> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications/${id}/unread`,
         {
           method: "PUT",
@@ -152,7 +153,7 @@ class NotificationsService {
 
   async markAllAsRead(): Promise<{ success: boolean; count: number }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications/read-all`,
         {
           method: "PUT",
@@ -191,7 +192,7 @@ class NotificationsService {
 
   async deleteAllNotifications(): Promise<{ success: boolean; count: number }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications`,
         { method: "DELETE" }
       );
@@ -222,7 +223,7 @@ class NotificationsService {
 
   async deleteNotification(id: string): Promise<void> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications/${id}`,
         { method: "DELETE" }
       );
@@ -252,7 +253,7 @@ class NotificationsService {
       if (notification.workingDirectory) body.workingDirectory = notification.workingDirectory;
       if (notification.sessionId) body.sessionId = notification.sessionId;
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/agent/direct-message`,
         {
           method: "POST",
@@ -287,7 +288,7 @@ class NotificationsService {
 
   async getUnreadCount(): Promise<UnreadCountResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/notifications/unread-count`
       );
 

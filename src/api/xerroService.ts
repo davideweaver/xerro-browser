@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   SystemHealth,
@@ -21,7 +22,7 @@ class XerroService {
 
   async getHealth(): Promise<SystemHealth> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/health`);
+      const response = await apiFetch(`${this.baseUrl}/api/v1/health`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch health: ${response.statusText}`);
@@ -42,7 +43,7 @@ class XerroService {
 
   async listServices(): Promise<ServiceListResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/services`);
+      const response = await apiFetch(`${this.baseUrl}/api/v1/services`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch services: ${response.statusText}`);
@@ -63,7 +64,7 @@ class XerroService {
 
   async restartService(serviceName: string): Promise<RestartServiceResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/services/${serviceName}/restart`,
         {
           method: "POST",
@@ -103,7 +104,7 @@ class XerroService {
       if (params?.since) queryParams.append("since", params.since);
 
       const url = `${this.baseUrl}/api/v1/logs${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch logs: ${response.statusText}`);

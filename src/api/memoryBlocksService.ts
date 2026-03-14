@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   MemoryBlockListResponse,
@@ -21,7 +22,7 @@ class MemoryBlocksService {
   ): Promise<T> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         ...options,
         headers: {
           "Content-Type": "application/json",

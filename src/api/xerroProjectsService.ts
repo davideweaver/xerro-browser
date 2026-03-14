@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   XerroProject,
@@ -34,7 +35,7 @@ class XerroProjectsService {
       if (params?.after) query.append("after", params.after);
 
       const url = `${this.baseUrl}/api/v1/projects/${query.toString() ? `?${query.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch projects: ${response.statusText}`);
@@ -59,7 +60,7 @@ class XerroProjectsService {
 
   async getProject(projectName: string): Promise<XerroProject | null> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/projects/${encodeURIComponent(projectName)}`
       );
       if (response.status === 404) return null;
@@ -94,7 +95,7 @@ class XerroProjectsService {
       if (params?.before) query.append("before", params.before);
 
       const url = `${this.baseUrl}/api/v1/sessions/${query.toString() ? `?${query.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch sessions: ${response.statusText}`);
@@ -127,7 +128,7 @@ class XerroProjectsService {
       if (params?.order) query.append("order", params.order);
 
       const url = `${this.baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}/messages${query.toString() ? `?${query.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch session messages: ${response.statusText}`);
@@ -144,7 +145,7 @@ class XerroProjectsService {
 
   async deleteProject(projectName: string): Promise<{ ok: boolean }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/projects/${encodeURIComponent(projectName)}`,
         { method: "DELETE" }
       );
@@ -171,7 +172,7 @@ class XerroProjectsService {
 
   async listMemoryBlocks(directory: string): Promise<XerroMemoryBlock[]> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/memory/blocks?directory=${encodeURIComponent(directory)}`
       );
 
@@ -203,7 +204,7 @@ class XerroProjectsService {
 
   async getMemoryBlock(label: string): Promise<XerroMemoryBlock | null> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/memory/blocks/${encodeURIComponent(label)}`
       );
       if (response.status === 404) return null;
@@ -216,7 +217,7 @@ class XerroProjectsService {
 
   async getSession(sessionId: string): Promise<XerroSession | null> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}`
       );
       if (!response.ok) return null;
@@ -228,7 +229,7 @@ class XerroProjectsService {
 
   async getSessionSummary(sessionId: string): Promise<string | null> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}/summary`
       );
       if (response.status === 404) return null;
@@ -241,7 +242,7 @@ class XerroProjectsService {
 
   async deleteSession(sessionId: string): Promise<{ ok: boolean }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/sessions/${encodeURIComponent(sessionId)}`,
         { method: "DELETE" }
       );

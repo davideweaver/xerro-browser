@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   DocumentListResponse,
@@ -27,7 +28,7 @@ class DocumentsService {
   ): Promise<T> {
     try {
       const url = `${this.baseUrl}${endpoint}`;
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         ...options,
         headers: {
           "Content-Type": "application/json",

@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   ScheduledTask,
@@ -37,7 +38,7 @@ class AgentTasksService {
       }
 
       const url = `${this.baseUrl}/api/v1/scheduled-tasks${params.toString() ? `?${params.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch tasks: ${response.statusText}`);
@@ -58,7 +59,7 @@ class AgentTasksService {
 
   async getTask(id: string): Promise<ScheduledTask> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}`
       );
 
@@ -84,7 +85,7 @@ class AgentTasksService {
     limit: number = 20
   ): Promise<TaskExecution[]> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/executions?limit=${limit}`
       );
 
@@ -112,7 +113,7 @@ class AgentTasksService {
 
   async getRecentRuns(limit: number = 50): Promise<Array<TaskExecution & { taskId: string; taskName: string }>> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/executions?limit=${limit}`
       );
 
@@ -140,7 +141,7 @@ class AgentTasksService {
 
   async getScratchpad(id: string): Promise<{ path: string; content: unknown; isEmpty: boolean }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/scratchpad`
       );
 
@@ -174,7 +175,7 @@ class AgentTasksService {
         await this.updateTask(id, { properties: updatedProperties });
       }
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/run`,
         {
           method: "POST",
@@ -226,7 +227,7 @@ class AgentTasksService {
     }
   ): Promise<ScheduledTask> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}`,
         {
           method: "PATCH",
@@ -263,7 +264,7 @@ class AgentTasksService {
 
   async createTask(input: CreateTaskInput): Promise<ScheduledTask> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/scheduled-tasks`, {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/scheduled-tasks`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
@@ -289,7 +290,7 @@ class AgentTasksService {
 
   async deleteTask(id: string): Promise<{ success: boolean; id: string }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}`,
         {
           method: "DELETE",
@@ -326,7 +327,7 @@ class AgentTasksService {
 
   async getTools(): Promise<ToolsResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/tools`
       );
 
@@ -349,7 +350,7 @@ class AgentTasksService {
 
   async clearScratchpad(id: string): Promise<{ success: boolean }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/scratchpad`,
         {
           method: "DELETE",
@@ -386,7 +387,7 @@ class AgentTasksService {
 
   async getTrace(id: string): Promise<{ path: string; trace: AgentExecutionTrace | null; isEmpty: boolean }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/trace`
       );
 
@@ -413,7 +414,7 @@ class AgentTasksService {
 
   async getExecutionTrace(executionId: string): Promise<AgentExecutionTrace | null> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/executions/${executionId}/trace`
       );
 
@@ -445,7 +446,7 @@ class AgentTasksService {
 
   async getRunningTasks(): Promise<RunningTasksResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/running`
       );
 
@@ -472,7 +473,7 @@ class AgentTasksService {
 
   async cancelExecution(executionId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/executions/${executionId}/cancel`,
         {
           method: "POST",
@@ -508,7 +509,7 @@ class AgentTasksService {
 
   async deleteExecution(executionId: string): Promise<{ success: boolean; id: string }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/executions/${executionId}`,
         {
           method: "DELETE",
@@ -545,7 +546,7 @@ class AgentTasksService {
 
   async clearTaskHistory(taskId: string): Promise<{ success: boolean; id: string; wasEmpty: boolean }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${taskId}/history`,
         {
           method: "DELETE",
@@ -584,7 +585,7 @@ class AgentTasksService {
 
   async getTaskVersions(id: string): Promise<TaskVersionsResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/versions`
       );
 
@@ -607,7 +608,7 @@ class AgentTasksService {
 
   async getTaskVersion(id: string, version: number): Promise<TaskVersionSnapshot> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/versions/${version}`
       );
 
@@ -630,7 +631,7 @@ class AgentTasksService {
 
   async restoreTaskVersion(id: string, version: number): Promise<ScheduledTask> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/${id}/versions/${version}/restore`,
         { method: "POST" }
       );
@@ -661,7 +662,7 @@ class AgentTasksService {
 
   async clearAllHistory(): Promise<{ success: boolean; cleared: number }> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/v1/scheduled-tasks/executions`,
         {
           method: "DELETE",

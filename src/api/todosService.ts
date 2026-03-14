@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   Todo,
@@ -44,7 +45,7 @@ class TodosService {
         params.append("offset", String(filter.offset));
 
       const url = `${this.baseUrl}/api/v1/todos${params.toString() ? `?${params.toString()}` : ""}`;
-      const response = await fetch(url);
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch todos: ${response.statusText}`);
@@ -65,7 +66,7 @@ class TodosService {
 
   async getTodo(id: string): Promise<Todo> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/todos/${id}`);
+      const response = await apiFetch(`${this.baseUrl}/api/v1/todos/${id}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch todo: ${response.statusText}`);
@@ -86,7 +87,7 @@ class TodosService {
 
   async createTodo(input: CreateTodoInput): Promise<Todo> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/todos`, {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/todos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
@@ -113,7 +114,7 @@ class TodosService {
 
   async updateTodo(id: string, input: UpdateTodoInput): Promise<Todo> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/todos/${id}`, {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/todos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
@@ -138,7 +139,7 @@ class TodosService {
 
   async deleteTodo(id: string): Promise<void> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/v1/todos/${id}`, {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/todos/${id}`, {
         method: "DELETE",
       });
 
@@ -168,7 +169,7 @@ class TodosService {
         body.workingDirectory = `/Users/dweaver/Projects/ai/claude-assist/projects/${todo.projectName}`;
       }
 
-      const response = await fetch(`${this.baseUrl}/api/v1/agent/direct-message`, {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/agent/direct-message`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -201,7 +202,7 @@ class TodosService {
       const params = new URLSearchParams();
       if (completed !== undefined) params.append("completed", String(completed));
       const qs = params.toString();
-      const response = await fetch(`${this.baseUrl}/api/v1/todos/projects${qs ? `?${qs}` : ""}`);
+      const response = await apiFetch(`${this.baseUrl}/api/v1/todos/projects${qs ? `?${qs}` : ""}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch projects: ${response.statusText}`);
