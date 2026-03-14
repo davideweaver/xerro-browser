@@ -57,10 +57,10 @@ self.addEventListener('notificationclick', (event) => {
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
         if (clientList.length > 0) {
-          // Navigate the existing window to the target URL
-          return clientList[0].navigate(url).then((client) => client.focus());
+          const client = clientList[0];
+          client.postMessage({ type: 'NAVIGATE', url });
+          return client.focus();
         }
-        // No window open — open a new one
         return clients.openWindow(url);
       })
   );

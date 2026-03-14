@@ -5,6 +5,11 @@ import App from './App.tsx'
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js');
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'NAVIGATE' && event.data?.url) {
+      window.location.href = event.data.url;
+    }
+  });
 }
 
 createRoot(document.getElementById('root')!).render(
