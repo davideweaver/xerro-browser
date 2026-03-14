@@ -56,16 +56,12 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then((clientList) => {
-        // Check if app is already open
-        for (const client of clientList) {
-          if (client.url === url && 'focus' in client) {
-            return client.focus();
-          }
+        if (clientList.length > 0) {
+          // Navigate the existing window to the target URL
+          return clientList[0].navigate(url).then((client) => client.focus());
         }
-        // Open new window if not open
-        if (clients.openWindow) {
-          return clients.openWindow(url);
-        }
+        // No window open — open a new one
+        return clients.openWindow(url);
       })
   );
 });
