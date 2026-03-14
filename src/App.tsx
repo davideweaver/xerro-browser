@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LoginPage } from "@/components/auth/LoginPage";
 import Router from "@/layout/Router";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,9 +17,8 @@ const queryClient = new QueryClient({
   },
 });
 
-function AuthGate() {
-  const { isAuthenticated } = useAuth();
-  if (!isAuthenticated) return <LoginPage />;
+function AuthenticatedApp() {
+  usePushNotifications();
   return (
     <XerroWebSocketProvider>
       <DashboardProvider>
@@ -29,6 +29,12 @@ function AuthGate() {
       </DashboardProvider>
     </XerroWebSocketProvider>
   );
+}
+
+function AuthGate() {
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <LoginPage />;
+  return <AuthenticatedApp />;
 }
 
 function App() {

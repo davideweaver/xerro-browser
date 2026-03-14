@@ -18,8 +18,8 @@ self.addEventListener('push', (event) => {
   let data = {
     title: 'New Notification',
     body: 'You have a new notification',
-    icon: '/vite.svg',
-    badge: '/vite.svg',
+    icon: '/apple-touch-icon.png',
+    badge: '/apple-touch-icon.png',
     data: { url: '/' }
   };
 
@@ -33,8 +33,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/vite.svg',
-    badge: data.badge || '/vite.svg',
+    icon: data.icon || '/apple-touch-icon.png',
+    badge: data.badge || '/apple-touch-icon.png',
     data: data.data || {},
     requireInteraction: false,
     tag: 'notification-' + Date.now()
