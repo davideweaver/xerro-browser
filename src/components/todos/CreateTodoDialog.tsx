@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, X } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import type { CreateTodoInput, Todo, UpdateTodoInput } from "@/types/todos";
+import { xerroProjectsService } from "@/api/xerroProjectsService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +11,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { BaseDialog } from "@/components/BaseDialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface CreateTodoDialogProps {
@@ -31,6 +40,13 @@ export function CreateTodoDialog({
   todo,
 }: CreateTodoDialogProps) {
   const isEditMode = !!todo;
+
+  const { data: projectsData } = useQuery({
+    queryKey: ["xerro-projects-all"],
+    queryFn: () => xerroProjectsService.listProjects({ limit: 100 }),
+  });
+  const projects = projectsData?.items.map((p) => p.name) ?? [];
+
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [projectName, setProjectName] = useState<string | null>(defaultProjectName || null);
@@ -143,15 +159,22 @@ export function CreateTodoDialog({
         )}
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="todo-project" className="text-base">Project</Label>
-            <Input
-              id="todo-project"
-              placeholder="Project name (optional)"
-              value={projectName || ""}
-              onChange={(e) => setProjectName(e.target.value || null)}
+            <Label className="text-base">Project</Label>
+            <Select
+              value={projectName ?? "__none__"}
+              onValueChange={(val) => setProjectName(val === "__none__" ? null : val)}
               disabled={projectNameDisabled}
-              className="text-lg md:text-sm bg-input"
-            />
+            >
+              <SelectTrigger className="text-lg md:text-sm bg-input">
+                <SelectValue placeholder="No project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No project</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p} value={p}>{p}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2">
             <Label className="text-base">Scheduled date</Label>
