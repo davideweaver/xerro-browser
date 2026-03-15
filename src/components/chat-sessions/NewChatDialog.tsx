@@ -31,6 +31,7 @@ interface NewChatDialogProps {
   onCreated: (sessionId: string) => void;
   initialConfig?: ChatSessionConfig;
   initialName?: string;
+  initialGroupId?: string;
   sessionId?: string; // If provided, this is an edit dialog
 }
 
@@ -42,6 +43,7 @@ export function NewChatDialog({
   onCreated,
   initialConfig,
   initialName = "",
+  initialGroupId,
   sessionId,
 }: NewChatDialogProps) {
   const isEdit = !!sessionId;
@@ -62,6 +64,7 @@ export function NewChatDialog({
   const [systemPrompt, setSystemPrompt] = useState(
     typeof initialConfig?.systemPrompt === "string" ? initialConfig.systemPrompt : ""
   );
+  const [groupId, setGroupId] = useState<string>(initialGroupId ?? "");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
@@ -82,9 +85,18 @@ export function NewChatDialog({
       setSystemPrompt(
         typeof initialConfig?.systemPrompt === "string" ? initialConfig.systemPrompt : ""
       );
+      setGroupId(initialGroupId ?? "");
       setAdvancedOpen(false);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Fetch groups for the group selector
+  const { data: groupsData } = useQuery({
+    queryKey: ["chat-groups"],
+    queryFn: () => chatService.listGroups(),
+    enabled: open,
+  });
+  const groups = groupsData?.groups ?? [];
 
   // Fetch available LLM servers when local mode is on
   const { data: serversData } = useQuery({
@@ -131,7 +143,7 @@ export function NewChatDialog({
         });
         onCreated(sessionId);
       } else {
-        const session = await chatService.createSession(name.trim(), config);
+        const session = await chatService.createSession(name.trim(), config, groupId || undefined);
         onCreated(session.id);
       }
       onOpenChange(false);
@@ -180,6 +192,27 @@ export function NewChatDialog({
             <Label htmlFor="cwd">Working Directory</Label>
             <WorkingDirectoryCombobox value={cwd} onChange={setCwd} />
           </div>
+
+          {/* Group (create mode only) */}
+          {!isEdit && groups.length > 0 && (
+            <div className="space-y-1.5">
+              <Label>Group (optional)</Label>
+              <Select
+                value={groupId || "__none__"}
+                onValueChange={(v) => setGroupId(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="No group" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">No group</SelectItem>
+                  {groups.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Advanced Section */}
           <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>

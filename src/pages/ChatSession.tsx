@@ -826,9 +826,11 @@ export default function ChatSession() {
           onSaved={() => {
             queryClient.invalidateQueries({ queryKey: ["chat-session", sessionId] });
             queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
+            queryClient.invalidateQueries({ queryKey: ["chat-groups"] });
           }}
           sessionId={sessionId!}
           initialName={session.name}
+          initialGroupId={session.groupId}
         />
       )}
 

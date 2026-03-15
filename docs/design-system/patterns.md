@@ -1400,3 +1400,42 @@ const handleCopy = () => {
 <Icon className="h-4 w-4 md:mr-2" />
 <span className="hidden md:inline">Text</span>
 ```
+
+## Secondary Nav Search Input
+
+Use the shared `SecondaryNavSearch` component for all search inputs in secondary nav panels. It provides a consistent borderless style with a search icon and a clear (X) button.
+
+**Location:** `src/components/navigation/SecondaryNavSearch.tsx`
+
+### Props
+
+- `value` — controlled search string
+- `onChange` — callback receiving the new string value (also called with `""` when cleared)
+- `placeholder` — optional, defaults to `"Search..."`
+
+### Implementation
+
+```tsx
+import { SecondaryNavSearch } from "@/components/navigation/SecondaryNavSearch";
+
+<div className="px-6 pb-4">
+  <SecondaryNavSearch
+    placeholder="Search items..."
+    value={searchInput}
+    onChange={setSearchInput}
+  />
+</div>
+```
+
+### Behavior
+
+- Search icon on the left (non-interactive)
+- Clear (X) button appears on the right when there is a value
+- Clicking X calls `onChange("")` to reset
+- No border, no focus ring — blends with the nav background
+
+### Examples in Codebase
+
+- `ProjectsSecondaryNav` — search projects by name
+- `TodosSecondaryNav` — search todos by name
+- `ChatSecondaryNav` — search groups by name (all-groups view)

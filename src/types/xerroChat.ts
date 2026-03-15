@@ -1,11 +1,28 @@
 export interface ChatSession {
   id: string;
   name: string;
+  groupId?: string;
   config: ChatSessionConfig;
   createdAt: string;
   updatedAt: string;
   lastMessageAt?: string;
   messageCount: number;
+}
+
+export interface ChatGroupContextItem {
+  type: 'document' | 'project' | 'memory_query' | string;
+  ref: string;
+  label?: string;
+}
+
+export interface ChatGroup {
+  id: string;
+  name: string;
+  context: ChatGroupContextItem[];
+  createdAt: string;
+  updatedAt: string;
+  sessionCount?: number;
+  lastSessionActivity?: string;
 }
 
 export interface ChatSessionConfig {

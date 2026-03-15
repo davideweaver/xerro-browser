@@ -2,12 +2,11 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { xerroProjectsService } from "@/api/xerroProjectsService";
-import { Input } from "@/components/ui/input";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { SecondaryNavItemTitle, SecondaryNavItemSubtitle } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
+import { SecondaryNavSearch } from "@/components/navigation/SecondaryNavSearch";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Search } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 interface ProjectsSecondaryNavProps {
@@ -74,15 +73,11 @@ export function ProjectsSecondaryNav({
     >
       {/* Search */}
       <div className="px-6 pb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search projects..."
-            className="pl-9"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-          />
-        </div>
+        <SecondaryNavSearch
+          placeholder="Search projects..."
+          value={searchInput}
+          onChange={setSearchInput}
+        />
       </div>
 
       {/* Project List */}

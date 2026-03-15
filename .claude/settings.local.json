@@ -93,7 +93,8 @@
       "WebFetch(domain:blog.ni18.in)",
       "WebFetch(domain:www.codemzy.com)",
       "Bash(/tmp/analyze_graphiti.txt:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(strings:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

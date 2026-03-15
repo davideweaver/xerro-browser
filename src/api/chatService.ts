@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
-import type { ChatSession, ChatSessionConfig, XerroChatMessage, ChatSessionSearchResult } from "@/types/xerroChat";
+import type { ChatSession, ChatSessionConfig, ChatGroup, XerroChatMessage, ChatSessionSearchResult } from "@/types/xerroChat";
 
 const XERRO_SERVICE_URL = import.meta.env.VITE_XERRO_API_URL || "";
 
@@ -23,12 +23,12 @@ class ChatService {
     }
   }
 
-  async createSession(name: string, config?: ChatSessionConfig): Promise<ChatSession> {
+  async createSession(name: string, config?: ChatSessionConfig, groupId?: string): Promise<ChatSession> {
     try {
       const response = await apiFetch(`${this.baseUrl}/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, config }),
+        body: JSON.stringify({ name, config, ...(groupId ? { groupId } : {}) }),
       });
       if (!response.ok) throw new Error(`Failed to create session: ${response.statusText}`);
       return await response.json();
@@ -53,7 +53,7 @@ class ChatService {
 
   async updateSession(
     id: string,
-    updates: { name?: string; config?: ChatSessionConfig }
+    updates: { name?: string; config?: ChatSessionConfig; groupId?: string | null }
   ): Promise<ChatSession> {
     try {
       const response = await apiFetch(`${this.baseUrl}/sessions/${id}`, {
@@ -178,6 +178,92 @@ class ChatService {
       return await response.json();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to cancel message";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Groups
+  // ---------------------------------------------------------------------------
+
+  async listGroups(opts?: { q?: string; sort?: "activity" | "name" }): Promise<{ groups: ChatGroup[] }> {
+    try {
+      const params = new URLSearchParams();
+      if (opts?.q) params.append("q", opts.q);
+      if (opts?.sort) params.append("sort", opts.sort);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      const response = await apiFetch(`${this.baseUrl}/groups${qs}`);
+      if (!response.ok) throw new Error(`Failed to list groups: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to list groups";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  async createGroup(name: string): Promise<ChatGroup> {
+    try {
+      const response = await apiFetch(`${this.baseUrl}/groups`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) throw new Error(`Failed to create group: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to create group";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  async updateGroup(id: string, name: string): Promise<ChatGroup> {
+    try {
+      const response = await apiFetch(`${this.baseUrl}/groups/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!response.ok) throw new Error(`Failed to update group: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update group";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  async deleteGroup(id: string, deleteSessions = false): Promise<{ success: true }> {
+    try {
+      const params = deleteSessions ? "?deleteSessions=true" : "";
+      const response = await apiFetch(`${this.baseUrl}/groups/${id}${params}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error(`Failed to delete group: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete group";
+      toast.error(message);
+      throw error;
+    }
+  }
+
+  async getGroupSessions(
+    groupId: string,
+    opts?: { limit?: number; before?: string }
+  ): Promise<{ sessions: ChatSession[] }> {
+    try {
+      const params = new URLSearchParams();
+      if (opts?.limit !== undefined) params.append("limit", String(opts.limit));
+      if (opts?.before) params.append("before", opts.before);
+      const qs = params.toString() ? `?${params.toString()}` : "";
+      const response = await apiFetch(`${this.baseUrl}/groups/${groupId}/sessions${qs}`);
+      if (!response.ok) throw new Error(`Failed to get group sessions: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to get group sessions";
       toast.error(message);
       throw error;
     }

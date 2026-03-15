@@ -1,9 +1,17 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { chatService } from "@/api/chatService";
 import { BaseDialog } from "@/components/BaseDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Check, Copy } from "lucide-react";
 import { copyToClipboard } from "@/lib/clipboard";
 
@@ -13,6 +21,7 @@ interface SessionSettingsDialogProps {
   onSaved: () => void;
   sessionId: string;
   initialName: string;
+  initialGroupId?: string;
 }
 
 export function SessionSettingsDialog({
@@ -21,17 +30,27 @@ export function SessionSettingsDialog({
   onSaved,
   sessionId,
   initialName,
+  initialGroupId,
 }: SessionSettingsDialogProps) {
   const [name, setName] = useState(initialName);
+  const [groupId, setGroupId] = useState<string>(initialGroupId ?? "");
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: groupsData } = useQuery({
+    queryKey: ["chat-groups"],
+    queryFn: () => chatService.listGroups(),
+    enabled: open,
+  });
+  const groups = groupsData?.groups ?? [];
 
   useEffect(() => {
     if (open) {
       setName(initialName);
+      setGroupId(initialGroupId ?? "");
       setCopied(false);
     }
-  }, [open, initialName]);
+  }, [open, initialName, initialGroupId]);
 
   const handleCopy = async () => {
     await copyToClipboard(sessionId);
@@ -42,7 +61,14 @@ export function SessionSettingsDialog({
   const handleSubmit = async () => {
     setIsSubmitting(true);
     try {
-      await chatService.updateSession(sessionId, { name: name.trim() || initialName });
+      const updates: Parameters<typeof chatService.updateSession>[1] = {
+        name: name.trim() || initialName,
+      };
+      // Only send groupId if it changed
+      if (groupId !== (initialGroupId ?? "")) {
+        updates.groupId = groupId || null; // "" → null to ungroup
+      }
+      await chatService.updateSession(sessionId, updates);
       onSaved();
       onOpenChange(false);
     } finally {
@@ -81,6 +107,27 @@ export function SessionSettingsDialog({
             autoFocus
           />
         </div>
+
+        {/* Group */}
+        {groups.length > 0 && (
+          <div className="space-y-1.5">
+            <Label>Group</Label>
+            <Select
+              value={groupId || "__none__"}
+              onValueChange={(v) => setGroupId(v === "__none__" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="No group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">No group</SelectItem>
+                {groups.map((g) => (
+                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Session ID */}
         <div className="space-y-1.5">

@@ -2,11 +2,11 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { todosService } from "@/api/todosService";
-import { Input } from "@/components/ui/input";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { SecondaryNavItemTitle } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
-import { Search, CalendarDays, List, Folder } from "lucide-react";
+import { SecondaryNavSearch } from "@/components/navigation/SecondaryNavSearch";
+import { CalendarDays, List, Folder } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 interface TodosSecondaryNavProps {
@@ -59,15 +59,11 @@ export function TodosSecondaryNav({
     <SecondaryNavContainer title="Todos">
       {/* Search */}
       <div className="px-6 pb-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search todos..."
-            className="pl-9"
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-          />
-        </div>
+        <SecondaryNavSearch
+          placeholder="Search todos..."
+          value={searchInput}
+          onChange={handleSearchChange}
+        />
       </div>
 
       {/* Static Filter Items */}
