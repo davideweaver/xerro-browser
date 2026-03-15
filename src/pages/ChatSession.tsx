@@ -611,17 +611,20 @@ export default function ChatSession() {
                             if (seg.kind === "thinking") {
                               return <ThinkingSegmentCard key={i} text={seg.text} />;
                             }
-                            if (seg.kind === "text") {
-                              return (
-                                <div key={i} className="py-2">
-                                  <div className="prose prose-sm dark:prose-invert max-w-none font-mono opacity-80" style={{ fontSize: "13px" }}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => <ClickableImage src={src} alt={alt} /> }}>
-                                      {seg.text}
-                                    </ReactMarkdown>
-                                  </div>
-                                </div>
-                              );
-                            }
+                            // TODO: Local model support — local models may not populate message.content,
+                            // so MessageBubble renders nothing. When local model chat is implemented,
+                            // render text segments here only when message.content is empty/absent.
+                            // if (seg.kind === "text") {
+                            //   return (
+                            //     <div key={i} className="py-2">
+                            //       <div className="prose prose-sm dark:prose-invert max-w-none font-mono opacity-80" style={{ fontSize: "13px" }}>
+                            //         <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ img: ({ src, alt }) => <ClickableImage src={src} alt={alt} /> }}>
+                            //           {seg.text}
+                            //         </ReactMarkdown>
+                            //       </div>
+                            //     </div>
+                            //   );
+                            // }
                             return null;
                           })}
                           {(() => {
