@@ -12,6 +12,7 @@ import { useState, useEffect, useRef } from "react";
 const MOBILE_NAV_ANIMATION_DURATION = 200;
 import { PrimaryNav } from "@/components/navigation/PrimaryNav";
 import { SecondaryNav } from "@/components/navigation/SecondaryNav";
+import { HomeSecondaryNav } from "@/components/navigation/HomeSecondaryNav";
 import { ProjectsSecondaryNav } from "@/components/navigation/ProjectsSecondaryNav";
 import { DocumentsSecondaryNav } from "@/components/navigation/DocumentsSecondaryNav";
 import { AgentTasksSecondaryNav } from "@/components/navigation/AgentTasksSecondaryNav";
@@ -198,6 +199,10 @@ const Layout = () => {
   const selectedTaskId = params.id || null;
   const isAgentTasksSection = activePrimary === "agent-tasks";
 
+  // Home section flag
+  const isHomeSection = activePrimary === "home";
+  const selectedTopicId = params.topicId || null;
+
   // Chat section flag
   const isChatSection = activePrimary === "chat";
   const selectedChatSessionId = params.sessionId || null;
@@ -339,6 +344,12 @@ const Layout = () => {
           <TodosSecondaryNav onNavigate={handleNavigate} />
         ) : isSystemSection ? (
           <SystemSecondaryNav onNavigate={handleNavigate} />
+        ) : isHomeSection ? (
+          <HomeSecondaryNav
+            pathname={pathname}
+            selectedTopicId={selectedTopicId}
+            onNavigate={handleNavigate}
+          />
         ) : (
           <SecondaryNav
             activePrimary={activePrimary}
@@ -408,6 +419,12 @@ const Layout = () => {
                 <TodosSecondaryNav onNavigate={() => {}} />
               ) : isSystemSection ? (
                 <SystemSecondaryNav onNavigate={() => {}} />
+              ) : isHomeSection ? (
+                <HomeSecondaryNav
+                  pathname={pathname}
+                  selectedTopicId={selectedTopicId}
+                  onNavigate={() => {}}
+                />
               ) : (
                 <SecondaryNav
                   activePrimary={activePrimary}
@@ -473,6 +490,13 @@ const Layout = () => {
               <SystemSecondaryNav
                 onNavigate={handleNavigate}
                 onItemSelect={handleMobileNavigate}
+              />
+            ) : isHomeSection ? (
+              <HomeSecondaryNav
+                pathname={pathname}
+                selectedTopicId={selectedTopicId}
+                onNavigate={handleNavigate}
+                onTopicSelect={handleMobileNavigate}
               />
             ) : undefined
           }

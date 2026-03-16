@@ -7,8 +7,6 @@ import {
   FileText,
   Bot,
   ListTodo,
-  Calendar,
-  Bell,
   BookMarked,
   MessagesSquare,
 } from "lucide-react";
@@ -35,10 +33,7 @@ export const navigationConfig: PrimaryNavItem[] = [
     icon: Home,
     label: 'Home',
     defaultPath: '/',
-    secondaryItems: [
-      { path: '/', icon: Calendar, label: 'Today' },
-      { path: '/home/notifications', icon: Bell, label: 'Notifications' }
-    ]
+    secondaryItems: []
   },
   {
     key: 'chat',

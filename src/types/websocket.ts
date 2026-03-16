@@ -209,6 +209,27 @@ export interface MemoryProjectPayload {
   lastTurnAt?: string;
 }
 
+import type { FeedTopic, FeedItem } from './feeds';
+
+export interface FeedTopicEvent {
+  topic: FeedTopic;
+}
+
+export interface FeedTopicDeletedEvent {
+  id: string;
+  deletedAt: string;
+}
+
+export interface FeedItemEvent {
+  item: FeedItem;
+}
+
+export interface FeedItemDeletedEvent {
+  id: string;
+  topicId: string;
+  deletedAt: string;
+}
+
 export interface XerroWebSocketEvents {
   'events:list': (events: string[]) => void;
   'scheduled-tasks:agent-status': (data: AgentStatusEvent) => void;
@@ -228,6 +249,11 @@ export interface XerroWebSocketEvents {
   'memory:project-added': (data: MemoryProjectPayload) => void;
   'memory:project-updated': (data: MemoryProjectPayload) => void;
   'memory:project-deleted': (data: MemoryProjectPayload) => void;
+  'feeds:topic-created': (data: FeedTopicEvent) => void;
+  'feeds:topic-deleted': (data: FeedTopicDeletedEvent) => void;
+  'feeds:item-created': (data: FeedItemEvent) => void;
+  'feeds:item-updated': (data: FeedItemEvent) => void;
+  'feeds:item-deleted': (data: FeedItemDeletedEvent) => void;
   connect: () => void;
   disconnect: () => void;
   connect_error: (error: Error) => void;
