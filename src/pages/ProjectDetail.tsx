@@ -15,11 +15,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, CalendarIcon } from "lucide-react";
 import { MarkdownViewer } from "@/components/document-viewers/MarkdownViewer";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ProjectTimelineBar } from "@/components/episodes/ProjectTimelineBar";
 import { SessionRow } from "@/components/episodes/SessionRow";
 import { format, parseISO } from "date-fns";
@@ -35,6 +37,8 @@ export default function ProjectDetail() {
   const activeTab = searchParams.get("tab") ?? "todos";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [selectedSessionDate, setSelectedSessionDate] = useState<string | null>(null);
+  const [sessionCalendarOpen, setSessionCalendarOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [todoToEdit, setTodoToEdit] = useState<Todo | null>(null);
   const [selectedDocLabel, setSelectedDocLabel] = useState<string | null>(null);
@@ -52,10 +56,26 @@ export default function ProjectDetail() {
     enabled: !!projectName,
   });
 
-  // Fetch sessions for this project
+  // Fetch sessions for this project (filtered by date when selected)
   const { data: sessionsData, isLoading: isLoadingSessions } = useQuery({
-    queryKey: ["xerro-project-sessions", projectName],
-    queryFn: () => xerroProjectsService.listSessions({ projectName, limit: 20 }),
+    queryKey: ["xerro-project-sessions", projectName, selectedSessionDate],
+    queryFn: () => {
+      if (selectedSessionDate) {
+        return xerroProjectsService.listSessions({
+          projectName, limit: 200, order: "asc",
+          startedAfter: `${selectedSessionDate}T00:00:00.000Z`,
+          startedBefore: `${selectedSessionDate}T23:59:59.999Z`,
+        });
+      }
+      return xerroProjectsService.listSessions({ projectName, limit: 20 });
+    },
+    enabled: !!projectName,
+  });
+
+  // Fetch activity summary for the timeline (all days, full history)
+  const { data: activityData } = useQuery({
+    queryKey: ["xerro-project-activity", projectName],
+    queryFn: () => xerroProjectsService.getProjectActivity(projectName),
     enabled: !!projectName,
   });
 
@@ -165,15 +185,10 @@ export default function ProjectDetail() {
     },
   });
 
-  const sessions: XerroSession[] = sessionsData?.sessions || [];
   const memoryBlocks: XerroMemoryBlock[] = memoryData || [];
 
-  const projectStartDate = sessions.length > 0
-    ? sessions.reduce((min, s) => s.startedAt < min ? s.startedAt : min, sessions[0].startedAt)
-    : null;
-  const projectEndDate = sessions.length > 0
-    ? sessions.reduce((max, s) => s.lastMessageAt > max ? s.lastMessageAt : max, sessions[0].lastMessageAt)
-    : null;
+  const projectStartDate = activityData?.firstSessionAt ?? null;
+  const projectEndDate = activityData?.lastSessionAt ?? null;
 
   const handleSelectDoc = async (label: string) => {
     setSelectedDocLabel(label);
@@ -188,6 +203,8 @@ export default function ProjectDetail() {
     setAllSessions([]);
     setSessionsCursor(undefined);
     setSessionsHasMore(false);
+    setSelectedSessionDate(null);
+    setSessionCalendarOpen(false);
   }, [projectName]);
 
   useEffect(() => {
@@ -315,10 +332,14 @@ export default function ProjectDetail() {
 
             {/* Timeline — always rendered; shows dashes until data loads */}
             <ProjectTimelineBar
-              sessions={sessions}
               projectName={projectName}
               projectStartDate={projectStartDate}
               projectEndDate={projectEndDate}
+              activeDays={activityData?.activeDays}
+              onDayClick={(dateKey) => {
+                setSelectedSessionDate(dateKey);
+                setSearchParams({ tab: "sessions" }, { replace: true });
+              }}
             />
           </CardContent>
         </Card>
@@ -372,6 +393,66 @@ export default function ProjectDetail() {
 
           {/* Sessions Tab */}
           <TabsContent value="sessions" className="mt-6 md:pl-4">
+            {activityData && (
+              <div className="flex justify-end mb-4">
+                <Popover open={sessionCalendarOpen} onOpenChange={setSessionCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-[220px] justify-between font-normal"
+                    >
+                      <span>
+                        {selectedSessionDate
+                          ? format(parseISO(selectedSessionDate), "EEE, MMM d, yyyy")
+                          : "Latest sessions"}
+                      </span>
+                      <CalendarIcon className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="flex gap-1 p-2 border-b border-border">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setSelectedSessionDate(format(new Date(), "yyyy-MM-dd"));
+                          setSessionCalendarOpen(false);
+                        }}
+                      >
+                        Today
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => {
+                          setSelectedSessionDate(null);
+                          setSessionCalendarOpen(false);
+                        }}
+                      >
+                        Latest
+                      </Button>
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={selectedSessionDate ? parseISO(selectedSessionDate) : undefined}
+                      onSelect={(date) => {
+                        setSelectedSessionDate(date ? format(date, "yyyy-MM-dd") : null);
+                        setSessionCalendarOpen(false);
+                      }}
+                      disabled={(date) => {
+                        const key = format(date, "yyyy-MM-dd");
+                        return !activityData.activeDays.some((d) => d.date === key);
+                      }}
+                      fromDate={projectStartDate ? parseISO(projectStartDate) : undefined}
+                      toDate={projectEndDate ? parseISO(projectEndDate) : undefined}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
             {isLoadingSessions && (
               <div className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -410,7 +491,7 @@ export default function ProjectDetail() {
                     {idx < allSessions.length - 1 && <Separator className="mt-4" />}
                   </div>
                 ))}
-                {sessionsHasMore && (
+                {!selectedSessionDate && sessionsHasMore && (
                   <div className="flex justify-center py-4">
                     <Button
                       variant="outline"

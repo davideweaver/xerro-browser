@@ -2,6 +2,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   XerroProject,
+  XerroProjectActivity,
   XerroProjectListResponse,
   XerroSession,
   XerroSessionListResponse,
@@ -74,6 +75,20 @@ class XerroProjectsService {
     }
   }
 
+  async getProjectActivity(projectName: string): Promise<XerroProjectActivity> {
+    try {
+      const response = await apiFetch(
+        `${this.baseUrl}/api/v1/projects/${encodeURIComponent(projectName)}/activity`
+      );
+      if (!response.ok) throw new Error(`Failed to fetch project activity: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch project activity";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    }
+  }
+
   async listSessions(params?: {
     projectName?: string;
     limit?: number;
@@ -82,6 +97,8 @@ class XerroProjectsService {
     order?: "asc" | "desc";
     after?: string;
     before?: string;
+    startedAfter?: string;
+    startedBefore?: string;
   }): Promise<XerroSessionListResponse> {
     try {
       const query = new URLSearchParams();
@@ -93,6 +110,8 @@ class XerroProjectsService {
       if (params?.order) query.append("order", params.order);
       if (params?.after) query.append("after", params.after);
       if (params?.before) query.append("before", params.before);
+      if (params?.startedAfter) query.append("startedAfter", params.startedAfter);
+      if (params?.startedBefore) query.append("startedBefore", params.startedBefore);
 
       const url = `${this.baseUrl}/api/v1/sessions/${query.toString() ? `?${query.toString()}` : ""}`;
       const response = await apiFetch(url);

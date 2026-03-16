@@ -15,6 +15,13 @@ export interface XerroProjectListResponse {
   nextCursor?: string;
 }
 
+// From GET /api/v1/projects/:name/activity
+export interface XerroProjectActivity {
+  firstSessionAt: string | null;
+  lastSessionAt: string | null;
+  activeDays: { date: string; count: number }[];
+}
+
 // From GET /api/v1/sessions/
 export interface XerroSession {
   id: string; // base64url of JSONL path (no extension)
