@@ -70,10 +70,11 @@ export default function Notifications() {
         ["notifications", showUnreadOnly],
         (old) => {
           if (!old) return old;
+          const newNotifications = old.notifications.filter((n) => n.id !== id);
           return {
             ...old,
-            notifications: old.notifications.filter((n) => n.id !== id),
-            total: old.total - 1,
+            notifications: newNotifications,
+            total: newNotifications.length,
           };
         }
       );
@@ -91,10 +92,11 @@ export default function Notifications() {
           if (!old) return old;
           if (showUnreadOnly) {
             // In unread-only view, re-add the notification to the list
+            const newNotifications = [updatedNotification, ...old.notifications.filter((n) => n.id !== updatedNotification.id)];
             return {
               ...old,
-              notifications: [updatedNotification, ...old.notifications.filter((n) => n.id !== updatedNotification.id)],
-              total: old.total + 1,
+              notifications: newNotifications,
+              total: newNotifications.length,
             };
           }
           return {
@@ -156,10 +158,11 @@ export default function Notifications() {
         (old) => {
           if (!old) return old;
           if (showUnreadOnly) {
+            const newNotifications = old.notifications.filter((n) => n.id !== eventData.id);
             return {
               ...old,
-              notifications: old.notifications.filter((n) => n.id !== eventData.id),
-              total: old.total - 1,
+              notifications: newNotifications,
+              total: newNotifications.length,
             };
           }
           return {
@@ -181,10 +184,11 @@ export default function Notifications() {
         ["notifications", showUnreadOnly],
         (old) => {
           if (!old) return old;
+          const newNotifications = old.notifications.filter((n) => n.id !== eventData.id);
           return {
             ...old,
-            notifications: old.notifications.filter((n) => n.id !== eventData.id),
-            total: Math.max(0, old.total - 1),
+            notifications: newNotifications,
+            total: newNotifications.length,
           };
         }
       );
