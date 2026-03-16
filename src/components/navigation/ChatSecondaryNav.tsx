@@ -17,7 +17,7 @@ import { NewGroupDialog } from "@/components/chat-sessions/NewGroupDialog";
 import { DeleteGroupDialog } from "@/components/chat-sessions/DeleteGroupDialog";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import {
-  Plus, RefreshCw, MessageSquare, Search, X,
+  Plus, MessageSquare, Search, X,
   Folder, FolderPlus, MoreHorizontal, ChevronLeft, Pencil, Trash2,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -63,13 +63,13 @@ export function ChatSecondaryNav({
   const [renameGroupId, setRenameGroupId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
-  const { data: sessionsData, isLoading: sessionsLoading, refetch: refetchSessions } = useQuery({
+  const { data: sessionsData, isLoading: sessionsLoading } = useQuery({
     queryKey: ["chat-sessions"],
     queryFn: () => chatService.listSessions(),
     refetchInterval: 30000,
   });
 
-  const { data: groupsData, refetch: refetchGroups } = useQuery({
+  const { data: groupsData } = useQuery({
     queryKey: ["chat-groups"],
     queryFn: () => chatService.listGroups(),
     refetchInterval: 30000,
@@ -185,14 +185,6 @@ export function ChatSecondaryNav({
     renameMutation.mutate({ id, name: renameValue.trim() });
   };
 
-  const handleRefresh = () => {
-    refetchSessions();
-    refetchGroups();
-    if (view === "group-sessions" && activeGroup) {
-      queryClient.invalidateQueries({ queryKey: ["chat-group-sessions", activeGroup.id] });
-    }
-  };
-
   const renderGroupItem = (group: ChatGroup) => (
     <SecondaryNavItem
       key={group.id}
@@ -278,9 +270,6 @@ export function ChatSecondaryNav({
               className={location.pathname === "/chat/search" ? "bg-accent text-accent-foreground" : ""}
             >
               <Search size={22} />
-            </SecondaryNavToolButton>
-            <SecondaryNavToolButton onClick={handleRefresh} title="Refresh">
-              <RefreshCw size={18} />
             </SecondaryNavToolButton>
           </>
         }
