@@ -106,11 +106,11 @@ function UpcomingRow({
       <div
         onClick={onClick}
         className={cn(
-          "flex items-start gap-2.5 pr-3 py-2.5 rounded-lg hover:bg-accent/40 transition-colors cursor-pointer",
+          "flex items-start gap-2.5 pl-2.5 pr-3 py-2.5 rounded-r-lg border-l-[3px] hover:bg-accent/40 transition-colors cursor-pointer",
+          color.border,
           isTentative && "opacity-50",
         )}
       >
-        <div className={cn("h-2 w-2 rounded-full flex-shrink-0 mt-1.5", color.dot)} />
         <div className="flex-1 min-w-0">
           <div className="font-medium text-base leading-snug truncate">{event.title}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
@@ -131,11 +131,11 @@ function UpcomingRow({
     <div
       onClick={onClick}
       className={cn(
-        "flex items-center gap-2.5 pr-3 py-2 rounded-lg hover:bg-accent/40 transition-colors cursor-pointer",
+        "flex items-center gap-2.5 pl-2.5 pr-3 py-2 rounded-r-lg border-l-[3px] hover:bg-accent/40 transition-colors cursor-pointer",
+        color.border,
         isTentative && "opacity-50",
       )}
     >
-      <div className={cn("h-2 w-2 rounded-full flex-shrink-0", color.dot)} />
       <div className="flex-1 min-w-0 text-sm truncate">{event.title}</div>
       <div className="flex items-center gap-1 text-xs text-muted-foreground flex-shrink-0">
         <span className="text-muted-foreground/60">in {fmtRelative(minsUntil)}</span>
