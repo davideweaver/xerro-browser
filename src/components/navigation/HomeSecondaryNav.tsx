@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calendar, Bell, Rss, Plus } from "lucide-react";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { NotificationBadge } from "@/components/notifications/NotificationBadge";
 import { useUnreadNotificationCount } from "@/hooks/use-unread-notification-count";
+import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
 import { feedsService } from "@/api/feedsService";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -32,8 +33,16 @@ export function HomeSecondaryNav({
 }: HomeSecondaryNavProps) {
   const queryClient = useQueryClient();
   const { unreadCount } = useUnreadNotificationCount();
+  const ws = useXerroWebSocketContext();
   const [isOpen, setIsOpen] = useState(false);
   const [newName, setNewName] = useState("");
+
+  useEffect(() => {
+    const unsub = ws.subscribeToFeedTopicCreated(() =>
+      queryClient.invalidateQueries({ queryKey: ["feeds-topics"] }),
+    );
+    return unsub;
+  }, [ws, queryClient]);
 
   const { data: topicsData } = useQuery({
     queryKey: ["feeds-topics"],
@@ -121,6 +130,16 @@ export function HomeSecondaryNav({
 
           {/* Topics list */}
           <div className="space-y-1">
+            <SecondaryNavItem
+              isActive={pathname === "/home/favorites"}
+              onClick={() => handleNavigate("/home/favorites")}
+            >
+              <div className="flex items-center justify-between w-full gap-2">
+                <span className={`truncate text-sm ${pathname === "/home/favorites" ? "font-medium" : ""}`}>
+                  Favorites
+                </span>
+              </div>
+            </SecondaryNavItem>
             {topics.map((topic) => {
               const isActive = selectedTopicId === topic.id;
               return (

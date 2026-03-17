@@ -12,21 +12,69 @@ import {
 import { Button } from "@/components/ui/button";
 import { feedsService } from "@/api/feedsService";
 import type { FeedItem } from "@/types/feeds";
+import type { FeedTopicConfig, FeedTopicStyle } from "@/hooks/use-feeds-config";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatDistanceToNow } from "date-fns";
 import { FeedItemPanel } from "@/components/feeds/FeedItemPanel";
 
-function FeedItemCard({
-  item,
-  onToggleFavorite,
-  onOpen,
-  onArchive,
-}: {
+interface CardProps {
   item: FeedItem;
   onToggleFavorite: (id: string) => void;
   onOpen: (item: FeedItem) => void;
   onArchive: (id: string) => void;
+}
+
+function CardFooter({ item, onToggleFavorite, onArchive, isMobile, iconSize = "h-4 w-4" }: {
+  item: FeedItem;
+  onToggleFavorite: (id: string) => void;
+  onArchive: (id: string) => void;
+  isMobile: boolean;
+  iconSize?: string;
 }) {
+  return (
+    <div className="flex items-center justify-between mt-auto pt-1 gap-2">
+      <div className="flex items-center gap-1.5 min-w-0">
+        <button
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.id); }}
+          className="flex-shrink-0 text-muted-foreground hover:text-amber-400 transition-colors"
+          aria-label={item.favorited ? "Remove from favorites" : "Add to favorites"}
+        >
+          <Star
+            className={iconSize}
+            fill={item.favorited ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth={item.favorited ? 0 : 1.5}
+            style={{ color: item.favorited ? "#f59e0b" : undefined }}
+          />
+        </button>
+        <span className="text-xs text-muted-foreground truncate">
+          {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+          {item.source && ` · ${item.source}`}
+        </span>
+        {item.url && (
+          <a
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
+      </div>
+      <button
+        onClick={(e) => { e.stopPropagation(); onArchive(item.id); }}
+        className={`flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors ${isMobile ? "" : "opacity-0 group-hover:opacity-100"}`}
+        aria-label="Archive item"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+function FeedItemCard({ item, onToggleFavorite, onOpen, onArchive }: CardProps) {
   const isMobile = useIsMobile();
 
   return (
@@ -35,68 +83,42 @@ function FeedItemCard({
       style={{ WebkitTapHighlightColor: "transparent" }}
       onClick={() => onOpen(item)}
     >
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium leading-snug line-clamp-2 flex-1">
-          {item.title}
-        </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(item.id);
-          }}
-          className="flex-shrink-0 text-muted-foreground hover:text-amber-400 transition-colors"
-          aria-label={
-            item.favorited ? "Remove from favorites" : "Add to favorites"
-          }
-        >
-          <Star
-            className="h-4 w-4"
-            fill={item.favorited ? "currentColor" : "none"}
-            stroke="currentColor"
-            strokeWidth={item.favorited ? 0 : 1.5}
-            style={{ color: item.favorited ? "#f59e0b" : undefined }}
-          />
-        </button>
-      </div>
+      <span className="text-sm font-medium leading-snug line-clamp-2">
+        {item.title}
+      </span>
       {item.summary && (
         <p className="text-sm text-muted-foreground line-clamp-3 flex-1">
           {item.summary}
         </p>
       )}
-      <div className="flex items-center justify-between mt-auto pt-1 gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <span className="text-xs text-muted-foreground truncate">
-            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-            {item.source && ` · ${item.source}`}
-          </span>
-          {item.url && (
-            <a
-              href={item.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          )}
-        </div>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onArchive(item.id);
-          }}
-          className={`flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors ${isMobile ? "" : "opacity-0 group-hover:opacity-100"}`}
-          aria-label="Archive item"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
+      <CardFooter item={item} onToggleFavorite={onToggleFavorite} onArchive={onArchive} isMobile={isMobile} />
     </div>
   );
 }
 
-export function FeedsSection() {
+function FeedItemCardLarge({ item, onToggleFavorite, onOpen, onArchive }: CardProps) {
+  const isMobile = useIsMobile();
+
+  return (
+    <div
+      className="group flex flex-col gap-3 rounded-lg p-4 min-w-0 h-full cursor-pointer [@media(hover:hover)]:hover:bg-accent/50 active:bg-accent/50 transition-colors"
+      style={{ WebkitTapHighlightColor: "transparent" }}
+      onClick={() => onOpen(item)}
+    >
+      <span className="text-xl font-semibold leading-snug">
+        {item.title}
+      </span>
+      {item.summary && (
+        <p className="text-base text-muted-foreground flex-1">
+          {item.summary}
+        </p>
+      )}
+      <CardFooter item={item} onToggleFavorite={onToggleFavorite} onArchive={onArchive} isMobile={isMobile} iconSize="h-5 w-5" />
+    </div>
+  );
+}
+
+export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
@@ -165,7 +187,27 @@ export function FeedsSection() {
 
   if (isLoading || !data) return null;
 
-  const activeEntries = data.entries.filter(({ items }) => items.length > 0);
+  // Filter to topics with items, then apply config: order, enabled filter, style
+  const withItems = data.entries.filter(({ items }) => items.length > 0);
+
+  function resolveEntries() {
+    const entryMap = new Map(withItems.map((e) => [e.topic.id, e]));
+    const configuredIds = new Set(config.map((c) => c.topicId));
+    const ordered = [
+      ...config.filter((c) => entryMap.has(c.topicId)),
+      ...withItems
+        .filter((e) => !configuredIds.has(e.topic.id))
+        .map((e) => ({ topicId: e.topic.id, style: "standard" as FeedTopicStyle, enabled: true })),
+    ];
+    return ordered
+      .filter((c) => c.enabled)
+      .map((c) => {
+        const entry = entryMap.get(c.topicId)!;
+        return { ...entry, style: c.style };
+      });
+  }
+
+  const activeEntries = resolveEntries();
 
   if (activeEntries.length === 0) {
     return <p className="text-sm text-muted-foreground">No feed items to show.</p>;
@@ -173,11 +215,15 @@ export function FeedsSection() {
 
   return (
     <div className="space-y-6">
-      {activeEntries.map(({ topic, items }) => {
+      {activeEntries.map(({ topic, items, style }) => {
+        const isLarge = style === "large";
+        const pageSize = isLarge ? 1 : cardsPerPage;
+        const CardComponent = isLarge ? FeedItemCardLarge : FeedItemCard;
+
         const offset = offsets[topic.id] ?? 0;
-        const visible = items.slice(offset, offset + cardsPerPage);
+        const visible = items.slice(offset, offset + pageSize);
         const canPrev = offset > 0;
-        const canNext = offset + cardsPerPage < items.length;
+        const canNext = offset + pageSize < items.length;
 
         return (
           <div key={topic.id} className="space-y-2">
@@ -241,7 +287,7 @@ export function FeedsSection() {
                     key={item.id}
                     style={{ flex: "0 0 100%", scrollSnapAlign: "start" }}
                   >
-                    <FeedItemCard
+                    <CardComponent
                       item={item}
                       onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
                       onOpen={setSelectedItem}
@@ -254,10 +300,10 @@ export function FeedsSection() {
               // Desktop: grid with chevron pagination
               <div
                 className="grid gap-2 -ml-3"
-                style={{ gridTemplateColumns: `repeat(${cardsPerPage}, 1fr)` }}
+                style={{ gridTemplateColumns: `repeat(${pageSize}, 1fr)` }}
               >
                 {visible.map((item) => (
-                  <FeedItemCard
+                  <CardComponent
                     key={item.id}
                     item={item}
                     onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
@@ -265,7 +311,7 @@ export function FeedsSection() {
                     onArchive={(id) => archiveMutation.mutate(id)}
                   />
                 ))}
-                {Array.from({ length: cardsPerPage - visible.length }).map(
+                {Array.from({ length: pageSize - visible.length }).map(
                   (_, i) => (
                     <div key={`empty-${i}`} />
                   ),

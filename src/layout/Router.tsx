@@ -19,6 +19,10 @@ const Router = createBrowserRouter(
         lazy={lazyImportComponent(() => import("@/pages/Notifications"))}
       />
       <Route
+        path="/home/favorites"
+        lazy={lazyImportComponent(() => import("@/pages/FeedsFavorites"))}
+      />
+      <Route
         path="/home/feeds/:topicId"
         lazy={lazyImportComponent(() => import("@/pages/FeedsTopic"))}
       />
