@@ -7,6 +7,7 @@ import { ContainerToolButton } from "@/components/container/ContainerToolButton"
 import { FeedsSection } from "@/components/feeds/FeedsSection";
 import { FeedsSectionConfigModal } from "@/components/feeds/FeedsSectionConfigModal";
 import { NotificationsSummaryBar } from "@/components/notifications/NotificationsSummaryBar";
+import { UpcomingEvents } from "@/components/calendar/UpcomingEvents";
 import { useFeedsConfig } from "@/hooks/use-feeds-config";
 import { feedsService } from "@/api/feedsService";
 
@@ -32,6 +33,7 @@ export default function Today() {
       }
     >
       <NotificationsSummaryBar />
+      <UpcomingEvents />
       <FeedsSection config={config} />
       <FeedsSectionConfigModal
         open={configOpen}

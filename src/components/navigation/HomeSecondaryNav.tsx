@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Bell, Rss, Plus } from "lucide-react";
+import { Calendar, CalendarDays, Bell, Rss, Plus } from "lucide-react";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { NotificationBadge } from "@/components/notifications/NotificationBadge";
@@ -94,6 +94,14 @@ export function HomeSecondaryNav({
           >
             <Calendar className="h-5 w-5" />
             <span className={pathname === "/" ? "font-medium" : ""}>Today</span>
+          </SecondaryNavItem>
+          <SecondaryNavItem
+            isActive={pathname === "/home/calendar"}
+            onClick={() => handleNavigate("/home/calendar")}
+            className="gap-3 h-11"
+          >
+            <CalendarDays className="h-5 w-5" />
+            <span className={pathname === "/home/calendar" ? "font-medium" : ""}>Calendar</span>
           </SecondaryNavItem>
           <SecondaryNavItem
             isActive={pathname === "/home/notifications"}

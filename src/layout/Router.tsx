@@ -15,6 +15,10 @@ const Router = createBrowserRouter(
         lazy={lazyImportComponent(() => import("@/pages/Today"))}
       />
       <Route
+        path="/home/calendar"
+        lazy={lazyImportComponent(() => import("@/pages/Calendar"))}
+      />
+      <Route
         path="/home/notifications"
         lazy={lazyImportComponent(() => import("@/pages/Notifications"))}
       />

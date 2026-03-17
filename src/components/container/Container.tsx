@@ -63,8 +63,8 @@ const Container: React.FC<Props> = ({
 
   // Header classes and styles based on fullHeight prop
   const headerClasses = isFixed
-    ? `flex max-w-screen-lg flex-col lg:flex-row justify-between items-start w-full mb-4 lg:mb-6 lg:flex-shrink-0`
-    : "flex max-w-screen-lg flex-col lg:flex-row justify-between items-start w-full mb-4 lg:mb-10";
+    ? `flex max-w-screen-lg flex-col lg:flex-row items-start w-full mb-6 lg:flex-shrink-0`
+    : "flex max-w-screen-lg flex-col lg:flex-row items-start w-full mb-4 lg:mb-10";
 
   const headerStyle = isFixed
     ? {
@@ -78,7 +78,9 @@ const Container: React.FC<Props> = ({
       };
 
   const titleClasses = isFixed ? "pb-2 lg:pb-0" : "pb-2 lg:pb-0";
-  const titleStyle = isMobile ? { marginLeft: 40, maxWidth: "calc(100% - 40px)" } : {};
+  const titleStyle = isMobile
+    ? { marginLeft: 40, maxWidth: "calc(100% - 40px)" }
+    : {};
 
   // Content area classes and styles based on fullHeight prop
   const contentClasses = isFixed
@@ -108,7 +110,13 @@ const Container: React.FC<Props> = ({
         <div className={`${titleClasses} min-w-0 flex-1`} style={titleStyle}>
           <h1
             className="font-bold flex items-center break-words"
-            style={{ fontSize: 28, lineHeight: 1.2, marginTop: 6, overflowWrap: "break-word", wordBreak: "break-word" }}
+            style={{
+              fontSize: 28,
+              lineHeight: 1.2,
+              marginTop: 6,
+              overflowWrap: "break-word",
+              wordBreak: "break-word",
+            }}
           >
             {title}{" "}
             {loading && (
@@ -121,7 +129,7 @@ const Container: React.FC<Props> = ({
             </div>
           )}
         </div>
-        <div className="flex flex-row gap-2 h-full items-center flex-shrink-0">
+        <div className="flex flex-row gap-2 items-center flex-shrink-0 lg:ml-auto">
           {tools}
         </div>
       </div>

@@ -50,6 +50,45 @@ const tools = (
 );
 ```
 
+## Toggle Buttons (ContainerToolToggle)
+
+Use `ContainerToolToggle` for binary on/off states in Container toolbars. It uses Radix's Toggle primitive with `pressed` / `onPressedChange` props.
+
+### Icon Intensity Pattern
+
+Icons inside toggles must visually communicate active vs inactive state using both `strokeWidth` and `opacity`:
+
+- **Active (pressed):** `strokeWidth={2.5}`, full opacity
+- **Inactive (unpressed):** `strokeWidth={1.5}`, `className="opacity-40"`
+
+```tsx
+import { ContainerToolToggle } from "@/components/container/ContainerToolToggle";
+import { List } from "lucide-react";
+
+<ContainerToolToggle
+  pressed={isListView}
+  onPressedChange={(on) => setIsListView(on)}
+  title={isListView ? "Switch to day view" : "Switch to list view"}
+>
+  <List
+    strokeWidth={isListView ? 2.5 : 1.5}
+    className={isListView ? undefined : "opacity-40"}
+  />
+</ContainerToolToggle>
+```
+
+For colored icons (e.g. favorites star), combine `fill` and `className` for color changes too:
+
+```tsx
+<Star
+  strokeWidth={isActive ? 2.5 : 1.5}
+  fill={isActive ? "currentColor" : "none"}
+  className={isActive ? "text-amber-400" : "opacity-40"}
+/>
+```
+
+**Used in:** `Notifications.tsx`, `FeedsTopic.tsx`, `Calendar.tsx`
+
 ## Secondary Navigation Tool Buttons
 
 Secondary navigation sidebars use **SecondaryNavToolButton** for header toolbar actions. These are icon-only buttons with a more compact design compared to page Container tool buttons.
