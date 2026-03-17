@@ -31,7 +31,8 @@ function FeedItemCard({
 
   return (
     <div
-      className="group flex flex-col gap-1.5 rounded-lg p-3 min-w-0 h-full cursor-pointer hover:bg-accent/50 transition-colors"
+      className="group flex flex-col gap-1.5 rounded-lg p-3 min-w-0 h-full cursor-pointer [@media(hover:hover)]:hover:bg-accent/50 active:bg-accent/50 transition-colors"
+      style={{ WebkitTapHighlightColor: "transparent" }}
       onClick={() => onOpen(item)}
     >
       <div className="flex items-start justify-between gap-2">
@@ -103,9 +104,9 @@ export function FeedsSection() {
 
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
 
-  // Per-topic carousel offset state: topicId -> page offset
+  // Per-topic carousel offset state: topicId -> page offset (desktop only)
   const [offsets, setOffsets] = useState<Record<string, number>>({});
-  const cardsPerPage = isMobile ? 1 : 3;
+  const cardsPerPage = 3;
 
   // Invalidate feeds-home on any feed event
   useEffect(() => {
@@ -163,11 +164,16 @@ export function FeedsSection() {
   });
 
   if (isLoading || !data) return null;
-  if (data.entries.length === 0) return null;
+
+  const activeEntries = data.entries.filter(({ items }) => items.length > 0);
+
+  if (activeEntries.length === 0) {
+    return <p className="text-sm text-muted-foreground">No feed items to show.</p>;
+  }
 
   return (
     <div className="space-y-6">
-      {data.entries.map(({ topic, items }) => {
+      {activeEntries.map(({ topic, items }) => {
         const offset = offsets[topic.id] ?? 0;
         const visible = items.slice(offset, offset + cardsPerPage);
         const canPrev = offset > 0;
@@ -178,31 +184,35 @@ export function FeedsSection() {
             <div className="flex items-center justify-between">
               <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">{topic.name}</span>
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  disabled={!canPrev}
-                  onClick={() =>
-                    setOffsets((prev) => ({
-                      ...prev,
-                      [topic.id]: Math.max(0, offset - 1),
-                    }))
-                  }
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  disabled={!canNext}
-                  onClick={() =>
-                    setOffsets((prev) => ({ ...prev, [topic.id]: offset + 1 }))
-                  }
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+                {!isMobile && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      disabled={!canPrev}
+                      onClick={() =>
+                        setOffsets((prev) => ({
+                          ...prev,
+                          [topic.id]: Math.max(0, offset - 1),
+                        }))
+                      }
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      disabled={!canNext}
+                      onClick={() =>
+                        setOffsets((prev) => ({ ...prev, [topic.id]: offset + 1 }))
+                      }
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
                 <button
                   onClick={() => navigate(`/home/feeds/${topic.id}`)}
                   className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1"
@@ -212,9 +222,36 @@ export function FeedsSection() {
               </div>
             </div>
 
-            {items.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No items yet.</p>
+            {isMobile ? (
+              // Mobile: CSS scroll snap — browser handles swiping natively
+              <div
+                className="-ml-3"
+                style={{
+                  display: "flex",
+                  overflowX: "scroll",
+                  scrollSnapType: "x mandatory",
+                  WebkitOverflowScrolling: "touch",
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    style={{ flex: "0 0 100%", scrollSnapAlign: "start" }}
+                  >
+                    <FeedItemCard
+                      item={item}
+                      onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
+                      onOpen={setSelectedItem}
+                      onArchive={(id) => archiveMutation.mutate(id)}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
+              // Desktop: grid with chevron pagination
               <div
                 className="grid gap-2 -ml-3"
                 style={{ gridTemplateColumns: `repeat(${cardsPerPage}, 1fr)` }}
@@ -228,7 +265,6 @@ export function FeedsSection() {
                     onArchive={(id) => archiveMutation.mutate(id)}
                   />
                 ))}
-                {/* Fill empty slots so grid stays consistent */}
                 {Array.from({ length: cardsPerPage - visible.length }).map(
                   (_, i) => (
                     <div key={`empty-${i}`} />

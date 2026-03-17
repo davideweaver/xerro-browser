@@ -121,7 +121,7 @@ const Container: React.FC<Props> = ({
             </div>
           )}
         </div>
-        <div className="flex flex-col md:flex-row gap-2 h-full items-center flex-shrink-0">
+        <div className="flex flex-row gap-2 h-full items-center flex-shrink-0">
           {tools}
         </div>
       </div>

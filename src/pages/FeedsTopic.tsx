@@ -9,7 +9,7 @@ import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfi
 import { FeedItemPanel } from "@/components/feeds/FeedItemPanel";
 import { feedsService } from "@/api/feedsService";
 import type { FeedItem } from "@/types/feeds";
-import { Star, Trash2, ExternalLink, X, ArchiveRestore } from "lucide-react";
+import { Star, Trash2, ExternalLink, X, ArchiveRestore, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -23,7 +23,13 @@ interface FeedItemRowProps {
   onUnarchive?: () => void;
 }
 
-function FeedItemRow({ item, onClick, onToggleFavorite, onArchive, onUnarchive }: FeedItemRowProps) {
+function FeedItemRow({
+  item,
+  onClick,
+  onToggleFavorite,
+  onArchive,
+  onUnarchive,
+}: FeedItemRowProps) {
   const isMobile = useIsMobile();
 
   return (
@@ -35,15 +41,24 @@ function FeedItemRow({ item, onClick, onToggleFavorite, onArchive, onUnarchive }
       <div className="flex-shrink-0 mt-1.5 mr-3">
         <button
           className="p-0 flex items-center justify-center"
-          onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
-          aria-label={item.favorited ? "Remove from favorites" : "Add to favorites"}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite();
+          }}
+          aria-label={
+            item.favorited ? "Remove from favorites" : "Add to favorites"
+          }
         >
           <Star
-            className="h-4 w-4 transition-colors"
+            className="h-5 w-5 transition-colors"
             fill={item.favorited ? "currentColor" : "none"}
             stroke="currentColor"
             strokeWidth={item.favorited ? 0 : 1.5}
-            style={{ color: item.favorited ? "#f59e0b" : "hsl(var(--muted-foreground) / 0.4)" }}
+            style={{
+              color: item.favorited
+                ? "#f59e0b"
+                : "hsl(var(--muted-foreground) / 0.4)",
+            }}
           />
         </button>
       </div>
@@ -82,14 +97,19 @@ function FeedItemRow({ item, onClick, onToggleFavorite, onArchive, onUnarchive }
       </div>
 
       {/* Action buttons */}
-      <div className={`flex-shrink-0 flex items-center gap-0.5 transition-opacity ${isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+      <div
+        className={`flex-shrink-0 flex items-center gap-0.5 transition-opacity ${isMobile ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+      >
         {item.archived ? (
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6 text-muted-foreground hover:text-foreground"
             title="Restore item"
-            onClick={(e) => { e.stopPropagation(); onUnarchive?.(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onUnarchive?.();
+            }}
           >
             <ArchiveRestore className="h-3.5 w-3.5" />
           </Button>
@@ -99,7 +119,10 @@ function FeedItemRow({ item, onClick, onToggleFavorite, onArchive, onUnarchive }
             size="icon"
             className="h-6 w-6 text-muted-foreground hover:text-foreground"
             title="Archive item"
-            onClick={(e) => { e.stopPropagation(); onArchive?.(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onArchive?.();
+            }}
           >
             <X className="h-3.5 w-3.5" />
           </Button>
@@ -118,14 +141,29 @@ export default function FeedsTopic() {
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
   const [deleteTopicOpen, setDeleteTopicOpen] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
 
   // ─── WebSocket real-time updates ──────────────────────────────────────────
 
   useEffect(() => {
     const unsubs = [
-      ws.subscribeToFeedItemCreated(() => queryClient.invalidateQueries({ queryKey: ["feeds-items-topic", topicId] })),
-      ws.subscribeToFeedItemUpdated(() => queryClient.invalidateQueries({ queryKey: ["feeds-items-topic", topicId], exact: false })),
-      ws.subscribeToFeedItemDeleted(() => queryClient.invalidateQueries({ queryKey: ["feeds-items-topic", topicId], exact: false })),
+      ws.subscribeToFeedItemCreated(() =>
+        queryClient.invalidateQueries({
+          queryKey: ["feeds-items-topic", topicId],
+        }),
+      ),
+      ws.subscribeToFeedItemUpdated(() =>
+        queryClient.invalidateQueries({
+          queryKey: ["feeds-items-topic", topicId],
+          exact: false,
+        }),
+      ),
+      ws.subscribeToFeedItemDeleted(() =>
+        queryClient.invalidateQueries({
+          queryKey: ["feeds-items-topic", topicId],
+          exact: false,
+        }),
+      ),
       ws.subscribeToFeedTopicDeleted((e) => {
         if (e.id === topicId) navigate("/");
       }),
@@ -141,8 +179,14 @@ export default function FeedsTopic() {
   });
 
   const { data: itemsData, isLoading } = useQuery({
-    queryKey: ["feeds-items-topic", topicId, showArchived],
-    queryFn: () => feedsService.listItems({ topicId, limit: 200, includeArchived: showArchived }),
+    queryKey: ["feeds-items-topic", topicId, showArchived, favoritesOnly],
+    queryFn: () =>
+      feedsService.listItems({
+        topicId,
+        limit: 200,
+        includeArchived: showArchived,
+        favorited: favoritesOnly || undefined,
+      }),
     enabled: !!topicId,
   });
 
@@ -151,10 +195,18 @@ export default function FeedsTopic() {
   const toggleFavoriteMutation = useMutation({
     mutationFn: (id: string) => feedsService.toggleFavorite(id),
     onSuccess: (updated) => {
-      queryClient.setQueryData(["feeds-items-topic", topicId, showArchived], (old: any) => {
-        if (!old) return old;
-        return { ...old, items: old.items.map((i: FeedItem) => i.id === updated.id ? updated : i) };
-      });
+      queryClient.setQueryData(
+        ["feeds-items-topic", topicId, showArchived, favoritesOnly],
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((i: FeedItem) =>
+              i.id === updated.id ? updated : i,
+            ),
+          };
+        },
+      );
       queryClient.invalidateQueries({ queryKey: ["feeds-home"] });
       setSelectedItem((prev) => (prev?.id === updated.id ? updated : prev));
     },
@@ -163,14 +215,28 @@ export default function FeedsTopic() {
   const archiveItemMutation = useMutation({
     mutationFn: (id: string) => feedsService.archiveItem(id),
     onSuccess: (updated) => {
-      queryClient.setQueryData(["feeds-items-topic", topicId, showArchived], (old: any) => {
-        if (!old) return old;
-        if (showArchived) {
-          return { ...old, items: old.items.map((i: FeedItem) => i.id === updated.id ? updated : i) };
-        }
-        return { ...old, items: old.items.filter((i: FeedItem) => i.id !== updated.id) };
+      queryClient.setQueryData(
+        ["feeds-items-topic", topicId, showArchived, favoritesOnly],
+        (old: any) => {
+          if (!old) return old;
+          if (showArchived) {
+            return {
+              ...old,
+              items: old.items.map((i: FeedItem) =>
+                i.id === updated.id ? updated : i,
+              ),
+            };
+          }
+          return {
+            ...old,
+            items: old.items.filter((i: FeedItem) => i.id !== updated.id),
+          };
+        },
+      );
+      queryClient.invalidateQueries({
+        queryKey: ["feeds-items-topic", topicId],
+        exact: false,
       });
-      queryClient.invalidateQueries({ queryKey: ["feeds-items-topic", topicId], exact: false });
       queryClient.invalidateQueries({ queryKey: ["feeds-home"] });
     },
   });
@@ -178,10 +244,18 @@ export default function FeedsTopic() {
   const unarchiveItemMutation = useMutation({
     mutationFn: (id: string) => feedsService.unarchiveItem(id),
     onSuccess: (updated) => {
-      queryClient.setQueryData(["feeds-items-topic", topicId, showArchived], (old: any) => {
-        if (!old) return old;
-        return { ...old, items: old.items.map((i: FeedItem) => i.id === updated.id ? updated : i) };
-      });
+      queryClient.setQueryData(
+        ["feeds-items-topic", topicId, showArchived, favoritesOnly],
+        (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: old.items.map((i: FeedItem) =>
+              i.id === updated.id ? updated : i,
+            ),
+          };
+        },
+      );
       queryClient.invalidateQueries({ queryKey: ["feeds-home"] });
     },
   });
@@ -207,14 +281,32 @@ export default function FeedsTopic() {
     <Container
       title={topic?.name ?? ""}
       loading={isLoading}
+      description={`${items.length} item${items.length !== 1 ? "s" : ""}`}
       tools={
         <>
+          <ContainerToolButton size="sm" onClick={() => navigate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </ContainerToolButton>
+          <ContainerToolToggle
+            pressed={favoritesOnly}
+            onPressedChange={setFavoritesOnly}
+            title={favoritesOnly ? "Show all" : "Show favorites only"}
+          >
+            <Star
+              strokeWidth={favoritesOnly ? 2.5 : 1.5}
+              className={favoritesOnly ? "text-amber-400" : "opacity-40"}
+              fill={favoritesOnly ? "currentColor" : "none"}
+            />
+          </ContainerToolToggle>
           <ContainerToolToggle
             pressed={showArchived}
             onPressedChange={setShowArchived}
             title={showArchived ? "Hide archived" : "Show archived"}
           >
-            <ArchiveRestore strokeWidth={showArchived ? 2.5 : 1.5} className={showArchived ? undefined : "opacity-40"} />
+            <ArchiveRestore
+              strokeWidth={showArchived ? 2.5 : 1.5}
+              className={showArchived ? undefined : "opacity-40"}
+            />
           </ContainerToolToggle>
           <ContainerToolButton
             size="icon"
