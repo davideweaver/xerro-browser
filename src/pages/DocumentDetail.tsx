@@ -92,8 +92,7 @@ export default function DocumentDetail() {
       }
     },
     onSuccess: () => {
-      // Note: Query invalidation and toast notification are both handled by WebSocket event handler
-      // This prevents duplicate toasts and unnecessary query refetches
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     },
     onError: (error) => {
       console.error("Failed to toggle bookmark:", error);

@@ -2,13 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Star,
-  ExternalLink,
-  X,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, ExternalLink, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { feedsService } from "@/api/feedsService";
 import type { FeedItem } from "@/types/feeds";
@@ -24,7 +18,13 @@ interface CardProps {
   onArchive: (id: string) => void;
 }
 
-function CardFooter({ item, onToggleFavorite, onArchive, isMobile, iconSize = "h-4 w-4" }: {
+function CardFooter({
+  item,
+  onToggleFavorite,
+  onArchive,
+  isMobile,
+  iconSize = "h-4 w-4",
+}: {
   item: FeedItem;
   onToggleFavorite: (id: string) => void;
   onArchive: (id: string) => void;
@@ -35,9 +35,14 @@ function CardFooter({ item, onToggleFavorite, onArchive, isMobile, iconSize = "h
     <div className="flex items-center justify-between mt-auto pt-1 gap-2">
       <div className="flex items-center gap-1.5 min-w-0">
         <button
-          onClick={(e) => { e.stopPropagation(); onToggleFavorite(item.id); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleFavorite(item.id);
+          }}
           className="flex-shrink-0 text-muted-foreground hover:text-amber-400 transition-colors"
-          aria-label={item.favorited ? "Remove from favorites" : "Add to favorites"}
+          aria-label={
+            item.favorited ? "Remove from favorites" : "Add to favorites"
+          }
         >
           <Star
             className={iconSize}
@@ -64,7 +69,10 @@ function CardFooter({ item, onToggleFavorite, onArchive, isMobile, iconSize = "h
         )}
       </div>
       <button
-        onClick={(e) => { e.stopPropagation(); onArchive(item.id); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onArchive(item.id);
+        }}
         className={`flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors ${isMobile ? "" : "opacity-0 group-hover:opacity-100"}`}
         aria-label="Archive item"
       >
@@ -74,7 +82,12 @@ function CardFooter({ item, onToggleFavorite, onArchive, isMobile, iconSize = "h
   );
 }
 
-function FeedItemCard({ item, onToggleFavorite, onOpen, onArchive }: CardProps) {
+function FeedItemCard({
+  item,
+  onToggleFavorite,
+  onOpen,
+  onArchive,
+}: CardProps) {
   const isMobile = useIsMobile();
 
   return (
@@ -91,12 +104,22 @@ function FeedItemCard({ item, onToggleFavorite, onOpen, onArchive }: CardProps) 
           {item.summary}
         </p>
       )}
-      <CardFooter item={item} onToggleFavorite={onToggleFavorite} onArchive={onArchive} isMobile={isMobile} />
+      <CardFooter
+        item={item}
+        onToggleFavorite={onToggleFavorite}
+        onArchive={onArchive}
+        isMobile={isMobile}
+      />
     </div>
   );
 }
 
-function FeedItemCardLarge({ item, onToggleFavorite, onOpen, onArchive }: CardProps) {
+function FeedItemCardLarge({
+  item,
+  onToggleFavorite,
+  onOpen,
+  onArchive,
+}: CardProps) {
   const isMobile = useIsMobile();
 
   return (
@@ -105,15 +128,17 @@ function FeedItemCardLarge({ item, onToggleFavorite, onOpen, onArchive }: CardPr
       style={{ WebkitTapHighlightColor: "transparent" }}
       onClick={() => onOpen(item)}
     >
-      <span className="text-xl font-semibold leading-snug">
-        {item.title}
-      </span>
+      <span className="text-xl font-semibold leading-snug">{item.title}</span>
       {item.summary && (
-        <p className="text-base text-muted-foreground flex-1">
-          {item.summary}
-        </p>
+        <p className="text-base text-muted-foreground flex-1">{item.summary}</p>
       )}
-      <CardFooter item={item} onToggleFavorite={onToggleFavorite} onArchive={onArchive} isMobile={isMobile} iconSize="h-5 w-5" />
+      <CardFooter
+        item={item}
+        onToggleFavorite={onToggleFavorite}
+        onArchive={onArchive}
+        isMobile={isMobile}
+        iconSize="h-5 w-5"
+      />
     </div>
   );
 }
@@ -197,7 +222,11 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
       ...config.filter((c) => entryMap.has(c.topicId)),
       ...withItems
         .filter((e) => !configuredIds.has(e.topic.id))
-        .map((e) => ({ topicId: e.topic.id, style: "standard" as FeedTopicStyle, enabled: true })),
+        .map((e) => ({
+          topicId: e.topic.id,
+          style: "standard" as FeedTopicStyle,
+          enabled: true,
+        })),
     ];
     return ordered
       .filter((c) => c.enabled)
@@ -210,7 +239,9 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
   const activeEntries = resolveEntries();
 
   if (activeEntries.length === 0) {
-    return <p className="text-sm text-muted-foreground">No feed items to show.</p>;
+    return (
+      <p className="text-sm text-muted-foreground">No feed items to show.</p>
+    );
   }
 
   return (
@@ -226,9 +257,11 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
         const canNext = offset + pageSize < items.length;
 
         return (
-          <div key={topic.id} className="space-y-2">
+          <div key={topic.id} className="space-y-0.5">
             <div className="flex items-center justify-between">
-              <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">{topic.name}</span>
+              <span className="font-medium text-xs uppercase tracking-wide text-muted-foreground">
+                {topic.name}
+              </span>
               <div className="flex items-center gap-1">
                 {!isMobile && (
                   <>
@@ -252,7 +285,10 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
                       className="h-6 w-6"
                       disabled={!canNext}
                       onClick={() =>
-                        setOffsets((prev) => ({ ...prev, [topic.id]: offset + 1 }))
+                        setOffsets((prev) => ({
+                          ...prev,
+                          [topic.id]: offset + 1,
+                        }))
                       }
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -289,7 +325,9 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
                   >
                     <CardComponent
                       item={item}
-                      onToggleFavorite={(id) => toggleFavoriteMutation.mutate(id)}
+                      onToggleFavorite={(id) =>
+                        toggleFavoriteMutation.mutate(id)
+                      }
                       onOpen={setSelectedItem}
                       onArchive={(id) => archiveMutation.mutate(id)}
                     />
