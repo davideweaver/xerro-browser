@@ -54,7 +54,7 @@ function CurrentEventCard({
     <div
       onClick={onClick}
       className={cn(
-        "rounded-lg bg-accent/40 pr-3 py-2.5 mb-1 hover:bg-accent/60 transition-colors cursor-pointer",
+        "rounded-lg bg-accent/40 px-3 py-2.5 mb-1 hover:bg-accent/60 transition-colors cursor-pointer",
         isTentative && "opacity-50",
       )}
     >
