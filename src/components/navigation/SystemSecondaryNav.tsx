@@ -13,6 +13,7 @@ import {
   Server,
   Database,
   Router as RouterIcon,
+  Sun,
 } from "lucide-react";
 
 interface SystemSecondaryNavProps {
@@ -76,6 +77,15 @@ export function SystemSecondaryNav({
           <div className="flex items-center gap-2 w-full">
             <LayoutDashboard className="h-4 w-4" />
             <SecondaryNavItemTitle>Overview</SecondaryNavItemTitle>
+          </div>
+        </SecondaryNavItem>
+        <SecondaryNavItem
+          isActive={isActive("/system/today")}
+          onClick={() => handleNavigation("/system/today")}
+        >
+          <div className="flex items-center gap-2 w-full">
+            <Sun className="h-4 w-4" />
+            <SecondaryNavItemTitle>Today</SecondaryNavItemTitle>
           </div>
         </SecondaryNavItem>
       </div>

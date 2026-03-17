@@ -137,6 +137,10 @@ const Router = createBrowserRouter(
         lazy={lazyImportComponent(() => import("@/pages/System"))}
       />
       <Route
+        path="/system/today"
+        lazy={lazyImportComponent(() => import("@/pages/TodaySettings"))}
+      />
+      <Route
         path="/system/xerro-service"
         lazy={lazyImportComponent(() => import("@/pages/XerroServiceStatus"))}
       />
