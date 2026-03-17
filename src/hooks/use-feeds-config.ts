@@ -6,6 +6,7 @@ export interface FeedTopicConfig {
   topicId: string;
   style: FeedTopicStyle;
   enabled: boolean;
+  rotating?: boolean;
 }
 
 const STORAGE_KEY = "xerro-feeds-config";

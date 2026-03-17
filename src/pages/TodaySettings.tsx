@@ -73,6 +73,14 @@ export default function TodaySettings() {
               >
                 Large
               </Button>
+              <Button
+                variant={cfg.rotating ? "secondary" : "ghost"}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => update(cfg.topicId, { rotating: !cfg.rotating })}
+              >
+                Rotating
+              </Button>
             </div>
             <div className="flex flex-col gap-0.5 flex-shrink-0">
               <button

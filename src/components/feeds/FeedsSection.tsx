@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
-import { ChevronLeft, ChevronRight, Star, ExternalLink, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, ExternalLink, X, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { feedsService } from "@/api/feedsService";
 import type { FeedItem } from "@/types/feeds";
@@ -155,6 +155,10 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
   const [offsets, setOffsets] = useState<Record<string, number>>({});
   const cardsPerPage = 3;
 
+  // Per-topic rotation pause state
+  const [pausedTopics, setPausedTopics] = useState<Set<string>>(new Set());
+  const activeEntriesRef = useRef<{ topicId: string; itemCount: number; pageSize: number }[]>([]);
+
   // Invalidate feeds-home on any feed event
   useEffect(() => {
     const invalidate = () =>
@@ -168,6 +172,23 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
     ];
     return () => unsubs.forEach((u) => u());
   }, [ws, queryClient]);
+
+  // Auto-rotate sections marked as rotating
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOffsets((prev) => {
+        const next = { ...prev };
+        for (const { topicId, itemCount, pageSize } of activeEntriesRef.current) {
+          if (pausedTopics.has(topicId)) continue;
+          const current = next[topicId] ?? 0;
+          const maxOffset = itemCount - pageSize;
+          next[topicId] = current >= maxOffset ? 0 : current + 1;
+        }
+        return next;
+      });
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [pausedTopics]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["feeds-home"],
@@ -226,17 +247,24 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
           topicId: e.topic.id,
           style: "standard" as FeedTopicStyle,
           enabled: true,
+          rotating: false,
         })),
     ];
     return ordered
       .filter((c) => c.enabled)
       .map((c) => {
         const entry = entryMap.get(c.topicId)!;
-        return { ...entry, style: c.style };
+        return { ...entry, style: c.style, rotating: c.rotating ?? false };
       });
   }
 
   const activeEntries = resolveEntries();
+
+  // Keep ref updated for the rotation interval
+  activeEntriesRef.current = activeEntries.map(({ topic, items, style, rotating }) => {
+    const pageSize = style === "large" ? 1 : cardsPerPage;
+    return rotating ? { topicId: topic.id, itemCount: items.length, pageSize } : null;
+  }).filter((x): x is { topicId: string; itemCount: number; pageSize: number } => x !== null);
 
   if (activeEntries.length === 0) {
     return (
@@ -246,7 +274,7 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
 
   return (
     <div className="space-y-6">
-      {activeEntries.map(({ topic, items, style }) => {
+      {activeEntries.map(({ topic, items, style, rotating }) => {
         const isLarge = style === "large";
         const pageSize = isLarge ? 1 : cardsPerPage;
         const CardComponent = isLarge ? FeedItemCardLarge : FeedItemCard;
@@ -255,6 +283,7 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
         const visible = items.slice(offset, offset + pageSize);
         const canPrev = offset > 0;
         const canNext = offset + pageSize < items.length;
+        const isPaused = pausedTopics.has(topic.id);
 
         return (
           <div key={topic.id} className="space-y-0.5">
@@ -265,6 +294,23 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
               <div className="flex items-center gap-1">
                 {!isMobile && (
                   <>
+                    {rotating && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 [&_svg]:size-[13px]"
+                        onClick={() =>
+                          setPausedTopics((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(topic.id)) next.delete(topic.id);
+                            else next.add(topic.id);
+                            return next;
+                          })
+                        }
+                      >
+                        {isPaused ? <Play fill="currentColor" /> : <Pause fill="currentColor" />}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
