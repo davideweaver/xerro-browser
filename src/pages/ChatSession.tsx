@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { chatService } from "@/api/chatService";
+import { getDraft, saveDraft, clearDraft } from "@/lib/chatDraftsStorage";
 import { useChatStream } from "@/hooks/use-chat-stream";
 import type { ChatSSEEvent, XerroChatMessage } from "@/types/xerroChat";
 import Container from "@/components/container/Container";
@@ -69,7 +70,7 @@ export default function ChatSession() {
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(() => (sessionId ? getDraft(sessionId) : ""));
   const [slashPickerIndex, setSlashPickerIndex] = useState(0);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [planMode, setPlanMode] = useState(false);
@@ -100,6 +101,11 @@ export default function ChatSession() {
   // Tracks thinking phase duration
   const thinkingStartMsRef = useRef<number | null>(null);
   const thinkingDurationMsRef = useRef<number | null>(null);
+
+  // Load draft when navigating to a different session (component reuses across routes)
+  useEffect(() => {
+    setInput(sessionId ? getDraft(sessionId) : "");
+  }, [sessionId]);
 
   // Load session metadata
   const { data: session } = useQuery({
@@ -596,6 +602,7 @@ export default function ChatSession() {
 
     setPlanReady(false);
     setInput("");
+    clearDraft(sessionId);
     setAttachedFiles([]);
     setStreamingSessionId(sessionId);
     setOptimisticUserMsg(content);
@@ -688,6 +695,7 @@ export default function ChatSession() {
     setIsDeleting(true);
     try {
       await chatService.deleteSession(sessionId);
+      clearDraft(sessionId);
       queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
       navigate("/chat", { replace: true });
       toast.success("Session deleted");
@@ -913,7 +921,11 @@ export default function ChatSession() {
               <Textarea
                 placeholder="Type your message… (Shift+Enter for new line, paste images)"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setInput(val);
+                  if (sessionId) saveDraft(sessionId, val);
+                }}
                 onKeyDown={handleKeyDown}
                 onPaste={handlePaste}
                 disabled={isActiveSession}
