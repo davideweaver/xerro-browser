@@ -78,7 +78,7 @@ function CurrentEventCard({
           </div>
         </div>
         <svg width="26" height="26" viewBox="0 0 28 28" className="flex-shrink-0 mt-0.5">
-          <circle cx="14" cy="14" r="10" fill="none" stroke="currentColor" strokeWidth="2.5" strokeOpacity="0.2" stroke="hsl(var(--foreground))" />
+          <circle cx="14" cy="14" r="10" fill="none" stroke="hsl(var(--foreground))" strokeWidth="2.5" strokeOpacity="0.2" />
           <circle
             cx="14" cy="14" r="10"
             fill="none"
