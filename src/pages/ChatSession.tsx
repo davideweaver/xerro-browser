@@ -269,6 +269,12 @@ export default function ChatSession() {
     reconnectControllerRef.current = controller;
     let mounted = true;
 
+    // Clear any stale streaming state from a previous session before acquiring the reconnect lock.
+    // Without this, streamingExecutionId (from the old session) leaks into this session's view.
+    setStreamingExecutionId(null);
+    setStreamingSessionId(null);
+    setOptimisticUserMsg(null);
+
     // Pre-lock: prevents the window where input is unlocked before the fetch resolves
     setIsReconnecting(true);
     setStreamingSessionId(sessionId);
