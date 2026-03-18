@@ -92,18 +92,22 @@ function FeedItemCard({
 
   return (
     <div
-      className="group flex flex-col gap-1.5 rounded-lg p-3 min-w-0 h-full cursor-pointer [@media(hover:hover)]:hover:bg-accent/50 active:bg-accent/50 transition-colors"
+      className="group flex flex-col gap-1.5 rounded-lg p-3 min-w-0 h-full"
       style={{ WebkitTapHighlightColor: "transparent" }}
-      onClick={() => onOpen(item)}
     >
-      <span className="text-sm font-medium leading-snug line-clamp-2">
-        {item.title}
-      </span>
-      {item.summary && (
-        <p className="text-sm text-muted-foreground line-clamp-3 flex-1">
-          {item.summary}
-        </p>
-      )}
+      <div
+        className="group/title cursor-pointer flex flex-col gap-1.5 flex-1 min-w-0"
+        onClick={() => onOpen(item)}
+      >
+        <span className="text-sm font-medium leading-snug line-clamp-2 group-hover/title:underline decoration-1 underline-offset-2">
+          {item.title}
+        </span>
+        {item.summary && (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {item.summary}
+          </p>
+        )}
+      </div>
       <CardFooter
         item={item}
         onToggleFavorite={onToggleFavorite}
@@ -124,14 +128,20 @@ function FeedItemCardLarge({
 
   return (
     <div
-      className="group flex flex-col gap-3 rounded-lg p-4 min-w-0 h-full cursor-pointer [@media(hover:hover)]:hover:bg-accent/50 active:bg-accent/50 transition-colors"
+      className="group flex flex-col gap-3 rounded-lg p-4 min-w-0 h-full"
       style={{ WebkitTapHighlightColor: "transparent" }}
-      onClick={() => onOpen(item)}
     >
-      <span className="text-xl font-semibold leading-snug">{item.title}</span>
-      {item.summary && (
-        <p className="text-base text-muted-foreground flex-1">{item.summary}</p>
-      )}
+      <div
+        className="group/title cursor-pointer flex flex-col gap-3 flex-1 min-w-0"
+        onClick={() => onOpen(item)}
+      >
+        <span className="text-xl font-semibold leading-snug group-hover/title:underline decoration-1 underline-offset-2">
+          {item.title}
+        </span>
+        {item.summary && (
+          <p className="text-base text-muted-foreground">{item.summary}</p>
+        )}
+      </div>
       <CardFooter
         item={item}
         onToggleFavorite={onToggleFavorite}
