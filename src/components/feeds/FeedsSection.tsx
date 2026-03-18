@@ -326,12 +326,13 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
                       size="icon"
                       className="h-6 w-6"
                       disabled={!canPrev}
-                      onClick={() =>
+                      onClick={() => {
                         setOffsets((prev) => ({
                           ...prev,
                           [topic.id]: Math.max(0, offset - 1),
-                        }))
-                      }
+                        }));
+                        if (rotating) setPausedTopics((prev) => new Set(prev).add(topic.id));
+                      }}
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
@@ -340,12 +341,13 @@ export function FeedsSection({ config = [] }: { config?: FeedTopicConfig[] }) {
                       size="icon"
                       className="h-6 w-6"
                       disabled={!canNext}
-                      onClick={() =>
+                      onClick={() => {
                         setOffsets((prev) => ({
                           ...prev,
                           [topic.id]: offset + 1,
-                        }))
-                      }
+                        }));
+                        if (rotating) setPausedTopics((prev) => new Set(prev).add(topic.id));
+                      }}
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>
