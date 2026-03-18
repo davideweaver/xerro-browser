@@ -8,6 +8,7 @@ export interface ChatSession {
   lastMessageAt?: string;
   messageCount: number;
   activeExecutionId?: string | null; // live executor state — non-null means a turn is running
+  slash_commands?: string[];         // available slash commands, populated after first turn
 }
 
 export interface ChatGroupContextItem {

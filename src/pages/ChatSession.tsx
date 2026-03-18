@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { SessionSettingsDialog } from "@/components/chat-sessions/SessionSettingsDialog";
+import { SlashCommandPicker } from "@/components/chat-sessions/SlashCommandPicker";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ClickableImage from "@/components/chat/ClickableImage";
@@ -69,6 +70,7 @@ export default function ChatSession() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const [input, setInput] = useState("");
+  const [slashPickerIndex, setSlashPickerIndex] = useState(0);
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [planMode, setPlanMode] = useState(false);
   const [planReady, setPlanReady] = useState(false);
@@ -117,6 +119,11 @@ export default function ChatSession() {
   });
 
   const messages = messagesData?.messages ?? [];
+
+  // Reset picker selection when input changes
+  useEffect(() => {
+    setSlashPickerIndex(0);
+  }, [input]);
 
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "instant" });
@@ -543,6 +550,25 @@ export default function ChatSession() {
   // True when streaming (POST) or reconnected stream is active for this session
   const isActiveSession = (isStreaming || isReconnecting) && streamingSessionId === sessionId;
 
+  // Slash command picker: show when cursor is after a "/" that's at start or after whitespace,
+  // with no space between it and end of input (so it works mid-sentence too).
+  const slashTriggerMatch = !isActiveSession ? input.match(/(^|\s)\/(\S*)$/) : null;
+  const showSlashPicker = !!slashTriggerMatch;
+  const slashFilter = slashTriggerMatch ? slashTriggerMatch[2].toLowerCase() : "";
+  // Built-in Claude Code CLI commands — these are intercepted at the CLI layer and cannot
+  // be invoked via the Agent SDK's query() call. Only show user-defined skills in the picker.
+  const BUILTIN_COMMANDS = new Set([
+    "compact", "context", "clear", "help", "model", "mcp", "memory",
+    "login", "logout", "status", "doctor", "vim", "permissions", "settings",
+    "cost", "heapdump", "init", "ide", "approved-tools", "migrate-installer",
+  ]);
+  const allSlashCommands = (session?.slash_commands ?? []).filter(
+    (cmd) => !BUILTIN_COMMANDS.has(cmd.replace(/^\//, ""))
+  );
+  const slashCommands = showSlashPicker
+    ? allSlashCommands.filter((cmd) => cmd.slice(1).toLowerCase().startsWith(slashFilter))
+    : [];
+
   // True when we have a streaming executionId that hasn't been persisted yet.
   // Keeps the streaming UI visible during the refetch gap after the stream ends.
   const streamingIsLive =
@@ -599,6 +625,29 @@ export default function ChatSession() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (slashCommands.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSlashPickerIndex((i) => Math.min(i + 1, slashCommands.length - 1));
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSlashPickerIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        setInput(input.replace(/((?:^|\s)\/)(\S*)$/, `$1${slashCommands[slashPickerIndex].slice(1)} `));
+        setSlashPickerIndex(0);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setInput("");
+        return;
+      }
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -850,16 +899,28 @@ export default function ChatSession() {
               </div>
             )}
 
-            <Textarea
-              placeholder="Type your message… (Shift+Enter for new line, paste images)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onPaste={handlePaste}
-              disabled={isActiveSession}
-              rows={3}
-              className="resize-none bg-transparent border-0 border-t border-t-white/20 rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-white/30"
-            />
+            <div className="relative">
+              {slashCommands.length > 0 && (
+                <SlashCommandPicker
+                  commands={slashCommands}
+                  selectedIndex={slashPickerIndex}
+                  onSelect={(cmd) => {
+                    setInput(input.replace(/((?:^|\s)\/)(\S*)$/, `$1${cmd.slice(1)} `));
+                    setSlashPickerIndex(0);
+                  }}
+                />
+              )}
+              <Textarea
+                placeholder="Type your message… (Shift+Enter for new line, paste images)"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onPaste={handlePaste}
+                disabled={isActiveSession}
+                rows={3}
+                className="resize-none bg-transparent border-0 border-t border-t-white/20 rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-white/30"
+              />
+            </div>
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-1">
                 <button

@@ -196,7 +196,7 @@ export function ChatSecondaryNav({
         <SecondaryNavItemTitle>{group.name}</SecondaryNavItemTitle>
         <SecondaryNavItemSubtitle>
           {group.sessionCount ?? 0} {(group.sessionCount ?? 0) === 1 ? "session" : "sessions"}
-          {group.lastSessionActivity && (
+          {group.lastSessionActivity && !isNaN(new Date(group.lastSessionActivity).getTime()) && (
             <> · {formatDistanceToNow(new Date(group.lastSessionActivity), { addSuffix: true })}</>
           )}
         </SecondaryNavItemSubtitle>
@@ -207,6 +207,8 @@ export function ChatSecondaryNav({
   const renderSessionItem = (session: typeof sessions[0]) => {
     const isActive = selectedSessionId === session.id;
     const lastActivity = session.lastMessageAt ?? session.createdAt;
+    const lastActivityDate = lastActivity ? new Date(lastActivity) : null;
+    const isValidDate = lastActivityDate && !isNaN(lastActivityDate.getTime());
     return (
       <div key={session.id} className="group/row">
         <SecondaryNavItem
@@ -217,10 +219,10 @@ export function ChatSecondaryNav({
           <div className="flex flex-col items-start min-w-0 flex-1 gap-0.5">
             <SecondaryNavItemTitle className="flex-1">{session.name}</SecondaryNavItemTitle>
             <SecondaryNavItemSubtitle>
-              {formatDistanceToNow(new Date(lastActivity), { addSuffix: true })}
+              {isValidDate ? formatDistanceToNow(lastActivityDate, { addSuffix: true }) : "No activity"}
               {session.messageCount > 0 && ` • ${session.messageCount} msgs`}
             </SecondaryNavItemSubtitle>
-            {session.config.cwd && (
+            {session.config?.cwd && (
               <SecondaryNavItemSubtitle className="w-full text-left opacity-60 font-mono text-[10px]">
                 <div className="truncate w-full">
                   {(() => {
