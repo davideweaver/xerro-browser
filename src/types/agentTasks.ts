@@ -103,6 +103,12 @@ export interface RunAgentProperties {
    */
   disableMemoryContext?: boolean;
   /**
+   * Control whether notifications are sent when this task completes.
+   * Default: true (agent decides NOTIFY vs SILENT based on result)
+   * Set to false to suppress all notifications regardless of agent decision.
+   */
+  notificationMode?: boolean;
+  /**
    * Override the system prompt sent to the model.
    * - Plain string: replaces the entire claude_code preset (~27k tokens → near-zero SDK overhead)
    * - Preset object: keeps claude_code preset and appends extra instructions

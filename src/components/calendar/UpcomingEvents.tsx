@@ -181,7 +181,20 @@ export function UpcomingEvents() {
 
   const { current, upcoming, remaining } = useMemo(() => {
     const now = new Date();
-    const timed = (data?.events ?? []).filter((e) => !e.isAllDay);
+    const allTimed = (data?.events ?? []).filter((e) => !e.isAllDay);
+
+    // Filter out "maybe" events that conflict with an accepted event
+    const accepted = allTimed.filter((e) => e.participationStatus !== 4);
+    const timed = allTimed.filter((e) => {
+      if (e.participationStatus !== 4) return true;
+      const s = parseISO(e.startDate).getTime();
+      const en = parseISO(e.endDate).getTime();
+      return !accepted.some((a) => {
+        const as = parseISO(a.startDate).getTime();
+        const ae = parseISO(a.endDate).getTime();
+        return s < ae && en > as;
+      });
+    });
 
     const current =
       timed.find((e) => {

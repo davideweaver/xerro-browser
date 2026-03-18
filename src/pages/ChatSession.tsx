@@ -90,6 +90,7 @@ export default function ChatSession() {
   const [executionData, setExecutionData] = useState<Map<string, ExecutionData>>(new Map());
 
   // Refs for non-rendering bookkeeping during streaming
+  const reconnectControllerRef = useRef<AbortController | null>(null);
   const currentExecutionIdRef = useRef<string | null>(null);
   const completedEventRef = useRef<ChatSSEEvent | null>(null);
   // Tracks the toolCallId of the current active agent-type tool (for child grouping)
@@ -196,26 +197,96 @@ export default function ChatSession() {
     });
   }, [messages]);
 
-  // On mount (or session change), try to reconnect to any active stream
+  // When the session loads with an activeExecutionId, pre-hydrate executionData from the
+  // disk snapshot immediately so the user sees partial state before the stream connects.
+  const activeExecutionHydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const activeId = session?.activeExecutionId;
+    if (!activeId || !sessionId) return;
+    if (activeExecutionHydratedRef.current === activeId) return; // already hydrated this execution
+    activeExecutionHydratedRef.current = activeId;
+
+    chatService.getActiveExecution(sessionId).then((data) => {
+      if (!data || data.executionId !== activeId) return;
+
+      const toolEventsMap = new Map<string, ToolEvent>();
+      const segments: StreamSegment[] = [];
+
+      for (const block of data.contentBlocks) {
+        if (block.type === 'tool_use') {
+          toolEventsMap.set(block.toolCallId, {
+            toolCallId: block.toolCallId,
+            toolName: block.toolName,
+            toolInput: block.toolInput,
+            toolResult: block.toolResult,
+            isToolError: block.isToolError,
+            isComplete: block.toolResult !== undefined,
+            parentToolCallId: block.parentToolUseId ?? undefined,
+          });
+          const last = segments[segments.length - 1];
+          if (last?.kind === 'tools') {
+            last.toolIds.push(block.toolCallId);
+          } else {
+            segments.push({ kind: 'tools', toolIds: [block.toolCallId] });
+          }
+        } else if (block.type === 'thinking') {
+          const last = segments[segments.length - 1];
+          if (last?.kind === 'thinking') {
+            last.text += '\n\n' + block.text;
+          } else {
+            segments.push({ kind: 'thinking', text: block.text });
+          }
+        } else if (block.type === 'text') {
+          const last = segments[segments.length - 1];
+          if (last?.kind === 'text') {
+            last.text += block.text;
+          } else {
+            segments.push({ kind: 'text', text: block.text });
+          }
+        }
+      }
+
+      setStreamingExecutionId(activeId);
+      setStreamingSessionId(sessionId);
+      setExecutionData((prev) => {
+        const next = new Map(prev);
+        // Only hydrate if the stream hasn't already populated this execution
+        if (!next.has(activeId)) {
+          next.set(activeId, { toolEvents: toolEventsMap, segments });
+        }
+        return next;
+      });
+    });
+  }, [session?.activeExecutionId, sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // On mount (or session change), try to reconnect to any active stream.
+  // Lock the input immediately — we don't yet know if a stream is active.
+  // If no stream is found (404) we unlock within one round-trip (~20ms for a local API).
   useEffect(() => {
     if (!sessionId) return;
 
-    const XERRO_URL = (import.meta as any).env?.VITE_XERRO_API_URL || '';
     const controller = new AbortController();
+    reconnectControllerRef.current = controller;
     let mounted = true;
+
+    // Pre-lock: prevents the window where input is unlocked before the fetch resolves
+    setIsReconnecting(true);
+    setStreamingSessionId(sessionId);
 
     (async () => {
       try {
-        const response = await fetch(
-          `${XERRO_URL}/api/v1/chat/sessions/${sessionId}/stream`,
-          { signal: controller.signal }
-        );
+        const response = await chatService.connectToStream(sessionId, controller.signal);
 
-        if (!response.ok || !response.body) return; // 404 = no active stream
-
-        if (!mounted) return;
-        setIsReconnecting(true);
-        setStreamingSessionId(sessionId);
+        if (!response.ok || !response.body) {
+          // No active stream — unlock immediately and refetch messages in case the
+          // execution completed while the page was loading (stale messages query).
+          if (mounted) {
+            setIsReconnecting(false);
+            setStreamingSessionId(null);
+            queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
+          }
+          return;
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -247,8 +318,13 @@ export default function ChatSession() {
         }
       } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') return;
-        // Network or other error — silently ignore for reconnect
+        // Network or other error — unlock so the user isn't stuck
+        if (mounted) {
+          setIsReconnecting(false);
+          setStreamingSessionId(null);
+        }
       } finally {
+        reconnectControllerRef.current = null;
         if (mounted) {
           setIsReconnecting(false);
         }
@@ -258,6 +334,7 @@ export default function ChatSession() {
     return () => {
       mounted = false;
       controller.abort();
+      reconnectControllerRef.current = null;
     };
   }, [sessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -445,6 +522,18 @@ export default function ChatSession() {
     onError: handleError,
   });
 
+  // Cancel handler — works for both the POST SSE stream and the reconnect GET stream
+  const handleCancel = useCallback(() => {
+    if (isReconnecting) {
+      reconnectControllerRef.current?.abort();
+      chatService.cancelMessage(sessionId!).catch(() => {});
+      setIsReconnecting(false);
+      setStreamingSessionId(null);
+    } else {
+      cancelStream();
+    }
+  }, [isReconnecting, cancelStream, sessionId]);
+
   // True when streaming (POST) or reconnected stream is active for this session
   const isActiveSession = (isStreaming || isReconnecting) && streamingSessionId === sessionId;
 
@@ -456,7 +545,7 @@ export default function ChatSession() {
 
   const handleSend = async () => {
     const content = input.trim();
-    if (!content || isStreaming || !sessionId) return;
+    if (!content || isStreaming || isReconnecting || !sessionId) return;
 
     const filesToSend = [...attachedFiles];
 
@@ -492,7 +581,7 @@ export default function ChatSession() {
   };
 
   const handleProceed = async () => {
-    if (!sessionId || isStreaming) return;
+    if (!sessionId || isStreaming || isReconnecting) return;
     setPlanReady(false);
     setPlanMode(false);
     setStreamingSessionId(sessionId);
@@ -697,6 +786,13 @@ export default function ChatSession() {
               const hasText = segments.some((s) => s.kind === "text");
               return (
                 <div className="space-y-1.5">
+                  {/* Shown while reconnect is in progress and no events have arrived yet */}
+                  {isReconnecting && !streamingExecutionId && (
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm py-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Reconnecting to active session…</span>
+                    </div>
+                  )}
                   {segments.map((seg, i) => {
                     if (seg.kind === "tools") {
                       const segTools = new Map(
@@ -717,7 +813,7 @@ export default function ChatSession() {
                       </div>
                     );
                   })}
-                  {!hasText && <ThinkingStatusLine />}
+                  {!hasText && (!isReconnecting || !!streamingExecutionId) && <ThinkingStatusLine />}
                 </div>
               );
             })()}
@@ -798,7 +894,7 @@ export default function ChatSession() {
               </div>
               <div className="flex gap-2">
                 {isActiveSession ? (
-                  <Button variant="destructive" size="sm" onClick={cancelStream}>
+                  <Button variant="destructive" size="sm" onClick={handleCancel}>
                     <Square className="h-4 w-4 mr-2" />
                     Cancel
                   </Button>

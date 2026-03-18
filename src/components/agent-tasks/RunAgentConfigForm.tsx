@@ -73,6 +73,9 @@ export function RunAgentConfigForm({
   const [disableMemoryContext, setDisableMemoryContext] = useState(
     props.disableMemoryContext ?? false,
   );
+  const [notificationMode, setNotificationMode] = useState(
+    props.notificationMode ?? true,
+  );
 
   // System prompt state
   type SystemPromptMode = "default" | "plain" | "preset_append";
@@ -159,6 +162,7 @@ export function RunAgentConfigForm({
           JSON.stringify(["project"]) && { settingSources }),
         ...(disallowedTools.length > 0 && { disallowedTools }),
         ...(disableMemoryContext && { disableMemoryContext }),
+        ...(!notificationMode && { notificationMode: false }),
         ...(systemPrompt !== undefined && { systemPrompt }),
       };
 
@@ -192,6 +196,7 @@ export function RunAgentConfigForm({
     setSettingSources(props.settingSources || ["project"]);
     setDisallowedTools(props.disallowedTools || []);
     setDisableMemoryContext(props.disableMemoryContext ?? false);
+    setNotificationMode(props.notificationMode ?? true);
     setSystemPromptMode(deriveSystemPromptMode(props.systemPrompt));
     setSystemPromptText(deriveSystemPromptText(props.systemPrompt));
     setPromptError("");
@@ -327,6 +332,16 @@ export function RunAgentConfigForm({
                 </h3>
                 <p className="text-sm">
                   {props.disableMemoryContext ? "Disabled" : "Enabled"}
+                </p>
+              </div>
+
+              {/* Notifications */}
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Notifications
+                </h3>
+                <p className="text-sm">
+                  {(props.notificationMode ?? true) ? "Enabled" : "Disabled"}
                 </p>
               </div>
 
@@ -653,6 +668,22 @@ export function RunAgentConfigForm({
               id="disableMemoryContext"
               checked={!disableMemoryContext}
               onCheckedChange={(checked) => setDisableMemoryContext(!checked)}
+              disabled={updateMutation.isPending}
+            />
+          </div>
+
+          {/* Notifications */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="notificationMode">Notifications</Label>
+              <p className="text-xs text-muted-foreground">
+                Notify when task completes
+              </p>
+            </div>
+            <Switch
+              id="notificationMode"
+              checked={notificationMode}
+              onCheckedChange={setNotificationMode}
               disabled={updateMutation.isPending}
             />
           </div>

@@ -7,6 +7,7 @@ export interface ChatSession {
   updatedAt: string;
   lastMessageAt?: string;
   messageCount: number;
+  activeExecutionId?: string | null; // live executor state — non-null means a turn is running
 }
 
 export interface ChatGroupContextItem {
@@ -69,6 +70,12 @@ export interface ChatSessionSearchResult {
   startedAt: string;
   lastMessageAt: string;
   messageCount: number;
+}
+
+export interface ActiveExecution {
+  executionId: string;
+  contentBlocks: XerroMessageContentBlock[];
+  updatedAt: string;
 }
 
 export interface ChatSSEEvent {

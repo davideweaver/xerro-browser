@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 import { apiFetch } from "@/lib/apiFetch";
-import type { ChatSession, ChatSessionConfig, ChatGroup, XerroChatMessage, ChatSessionSearchResult } from "@/types/xerroChat";
+import type { ChatSession, ChatSessionConfig, ChatGroup, XerroChatMessage, ChatSessionSearchResult, ActiveExecution } from "@/types/xerroChat";
 
 const XERRO_SERVICE_URL = import.meta.env.VITE_XERRO_API_URL || "";
 
@@ -167,6 +167,21 @@ class ChatService {
       toast.error(message);
       throw error;
     }
+  }
+
+  async getActiveExecution(sessionId: string): Promise<ActiveExecution | null> {
+    try {
+      const response = await apiFetch(`${this.baseUrl}/sessions/${sessionId}/active-execution`);
+      if (response.status === 404) return null;
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  }
+
+  async connectToStream(sessionId: string, signal: AbortSignal): Promise<Response> {
+    return apiFetch(`${this.baseUrl}/sessions/${sessionId}/stream`, { signal });
   }
 
   async cancelMessage(sessionId: string): Promise<{ success: true; executionId: string }> {
