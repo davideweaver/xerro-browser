@@ -3,10 +3,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useXerroWebSocketContext, } from "@/context/XerroWebSocketContext";
 import { useEffect } from "react";
 import Container from "@/components/container/Container";
+import { ContainerToolToggle } from "@/components/container/ContainerToolToggle";
 import { FeedItemPanel } from "@/components/feeds/FeedItemPanel";
 import { feedsService } from "@/api/feedsService";
 import type { FeedItem } from "@/types/feeds";
-import { Star, ExternalLink } from "lucide-react";
+import { Star, ExternalLink, Layers } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 function FeedItemRow({ item, onClick, onToggleFavorite }: {
@@ -80,6 +81,10 @@ export default function FeedsFavorites() {
   const queryClient = useQueryClient();
   const ws = useXerroWebSocketContext();
   const [selectedItem, setSelectedItem] = useState<FeedItem | null>(null);
+  const [groupByTopic, setGroupByTopic] = useState(() => {
+    const stored = localStorage.getItem("feeds-favorites-group-by-topic");
+    return stored !== null ? stored === "true" : true;
+  });
 
   useEffect(() => {
     const unsubs = [
@@ -115,15 +120,62 @@ export default function FeedsFavorites() {
 
   const items = data?.items ?? [];
 
+  // Build grouped structure when groupByTopic is on
+  const groupedItems: { topic: string; items: FeedItem[] }[] = groupByTopic
+    ? Object.entries(
+        items.reduce<Record<string, FeedItem[]>>((acc, item) => {
+          const key = item.topicName ?? "Uncategorized";
+          (acc[key] ??= []).push(item);
+          return acc;
+        }, {})
+      )
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([topic, items]) => ({ topic, items }))
+    : [];
+
+  const tools = (
+    <ContainerToolToggle
+      pressed={groupByTopic}
+      onPressedChange={(val) => {
+        setGroupByTopic(val);
+        localStorage.setItem("feeds-favorites-group-by-topic", String(val));
+      }}
+      aria-label="Group by topic"
+    >
+      <Layers strokeWidth={groupByTopic ? 2.5 : 1.5} className={groupByTopic ? undefined : "opacity-40"} />
+    </ContainerToolToggle>
+  );
+
   return (
     <Container
       title="Favorites"
       loading={isLoading}
       description={`${items.length} item${items.length !== 1 ? "s" : ""}`}
+      tools={tools}
     >
       {!isLoading && items.length === 0 ? (
         <div className="flex items-center justify-center py-12">
           <p className="text-muted-foreground">No favorites yet.</p>
+        </div>
+      ) : groupByTopic ? (
+        <div className="space-y-4">
+          {groupedItems.map(({ topic, items: groupItems }) => (
+            <div key={topic}>
+              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 px-0 pb-1 mb-1 border-b border-border/40">
+                {topic}
+              </div>
+              <div className="space-y-1">
+                {groupItems.map((item) => (
+                  <FeedItemRow
+                    key={item.id}
+                    item={item}
+                    onClick={() => setSelectedItem(item)}
+                    onToggleFavorite={() => toggleFavoriteMutation.mutate(item.id)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       ) : (
         <div className="space-y-1">
