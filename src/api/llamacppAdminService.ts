@@ -1,3 +1,4 @@
+import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/hooks/use-toast";
 import type {
   HealthResponse,
@@ -13,50 +14,15 @@ import type {
 
 class LlamacppAdminService {
   private baseUrl: string;
-  private bearerToken: string;
 
   constructor() {
-    // Use proxy path in development, direct URL in production
-    this.baseUrl = import.meta.env.DEV
-      ? "/llamacpp-admin"
-      : (import.meta.env.VITE_LLAMACPP_ADMIN_URL || "");
-    this.bearerToken = import.meta.env.VITE_LLAMACPP_ADMIN_TOKEN || "";
-
-    console.log("LlamacppAdminService initialized:", {
-      baseUrl: this.baseUrl,
-      isDev: import.meta.env.DEV,
-      hasToken: !!this.bearerToken,
-      tokenPrefix: this.bearerToken ? `${this.bearerToken.substring(0, 10)}...` : "none"
-    });
-
-    if (!this.baseUrl && !import.meta.env.DEV) {
-      console.warn(
-        "VITE_LLAMACPP_ADMIN_URL not configured. LlamaCPP admin may not work."
-      );
-    }
-    if (!this.bearerToken) {
-      console.warn(
-        "VITE_LLAMACPP_ADMIN_TOKEN not configured. Authentication will fail."
-      );
-    }
-  }
-
-  private getHeaders(): HeadersInit {
-    return {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${this.bearerToken}`,
-    };
+    const apiBase = import.meta.env.VITE_XERRO_API_URL || "";
+    this.baseUrl = `${apiBase}/api/v1/llamacpp`;
   }
 
   async getHealth(): Promise<HealthResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/health`, {
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(`${this.baseUrl}/health`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch health: ${response.statusText}`);
@@ -77,13 +43,7 @@ class LlamacppAdminService {
 
   async getSystemStatus(): Promise<SystemStatusResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/status`, {
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(`${this.baseUrl}/api/status`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch status: ${response.statusText}`);
@@ -104,13 +64,7 @@ class LlamacppAdminService {
 
   async listServers(): Promise<ServerListResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/servers`, {
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(`${this.baseUrl}/api/servers`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch servers: ${response.statusText}`);
@@ -131,17 +85,10 @@ class LlamacppAdminService {
 
   async startServer(serverId: string): Promise<ServerControlResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/servers/${serverId}/start`,
-        {
-          method: "POST",
-          headers: this.getHeaders(),
-        }
+        { method: "POST" }
       );
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to start server: ${response.statusText}`);
@@ -169,17 +116,10 @@ class LlamacppAdminService {
 
   async stopServer(serverId: string): Promise<ServerControlResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/servers/${serverId}/stop`,
-        {
-          method: "POST",
-          headers: this.getHeaders(),
-        }
+        { method: "POST" }
       );
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to stop server: ${response.statusText}`);
@@ -207,17 +147,10 @@ class LlamacppAdminService {
 
   async restartServer(serverId: string): Promise<ServerControlResponse> {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `${this.baseUrl}/api/servers/${serverId}/restart`,
-        {
-          method: "POST",
-          headers: this.getHeaders(),
-        }
+        { method: "POST" }
       );
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to restart server: ${response.statusText}`);
@@ -254,13 +187,7 @@ class LlamacppAdminService {
       if (params?.since) queryParams.append("since", params.since);
 
       const url = `${this.baseUrl}/api/servers/${serverId}/logs${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await fetch(url, {
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch logs: ${response.statusText}`);
@@ -282,17 +209,7 @@ class LlamacppAdminService {
   async listModels(): Promise<ModelListResponse> {
     try {
       const url = `${this.baseUrl}/api/models`;
-      console.log("Fetching models from:", url);
-
-      const response = await fetch(url, {
-        headers: this.getHeaders(),
-      });
-
-      console.log("Models response status:", response.status);
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -300,9 +217,7 @@ class LlamacppAdminService {
         throw new Error(`Failed to fetch models: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      console.log("Models API data:", data);
-      return data;
+      return await response.json();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to fetch models";
@@ -317,13 +232,7 @@ class LlamacppAdminService {
 
   async getRouterStatus(): Promise<RouterStatus> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/router`, {
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(`${this.baseUrl}/api/router`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch router status: ${response.statusText}`);
@@ -346,14 +255,9 @@ class LlamacppAdminService {
 
   async startRouter(): Promise<RouterControlResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/router/start`, {
+      const response = await apiFetch(`${this.baseUrl}/api/router/start`, {
         method: "POST",
-        headers: this.getHeaders(),
       });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to start router: ${response.statusText}`);
@@ -381,14 +285,9 @@ class LlamacppAdminService {
 
   async stopRouter(): Promise<RouterControlResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/router/stop`, {
+      const response = await apiFetch(`${this.baseUrl}/api/router/stop`, {
         method: "POST",
-        headers: this.getHeaders(),
       });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
 
       if (!response.ok) {
         throw new Error(`Failed to stop router: ${response.statusText}`);
@@ -422,13 +321,7 @@ class LlamacppAdminService {
       if (params?.since) queryParams.append("since", params.since);
 
       const url = `${this.baseUrl}/api/router/logs${queryParams.toString() ? `?${queryParams.toString()}` : ""}`;
-      const response = await fetch(url, {
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 401) {
-        throw new Error("Authentication required. Check VITE_LLAMACPP_ADMIN_TOKEN.");
-      }
+      const response = await apiFetch(url);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch logs: ${response.statusText}`);
