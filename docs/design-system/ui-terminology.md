@@ -30,31 +30,32 @@ Naming conventions for UI areas, components, state variables, and files. This gu
 └────────────────────────────┘
 ```
 
-**Mobile Nav Overlay (open):**
+**Mobile Nav (open):**
 
 ```
 ┌──────────────┬─────────────┐
 │ [✕]          │ Secondary   │
 │ Primary Nav  │    Nav      │
 │              │             │
-│ [Dashboard]  │ Section     │
-│ [Projects]   │ content     │
-│ [Documents]  │ with        │
-│ [Memory]     │ filters &   │
-│ [Tasks]      │ items       │
+│ [Section 1]  │ Section     │
+│ [Section 2]  │ content     │
+│ [Section 3]  │ with        │
+│ [Section 4]  │ filters &   │
+│ [Section 5]  │ items       │
 │              │             │
 │ [User Menu]  │             │
 └──────────────┴─────────────┘
-     (Sheet overlay combining both navs)
+     (Drawer combining both navs)
 ```
 
-**Primary Nav** - The 75px left sidebar with icon-only navigation
+**Section** — A top-level grouping of app functionality, represented by a single icon in the Primary Nav. Selecting a section activates it and switches the Secondary Nav to show section-specific navigation. Referred to as "[Name] section" (e.g., "Home section", "Boards section", "Settings section").
+
+**Primary Nav** - The 75px left sidebar with icon-only navigation. Each icon represents one Section.
 - Component: `PrimaryNav`
 - See [Layout](layout.md#navigation) for implementation details
 
-**Secondary Nav** - The 380px middle column with contextual navigation
-- Components: `SecondaryNav`, `ProjectsSecondaryNav`, `DocumentsSecondaryNav`, etc.
-- Context-specific: Changes based on active section
+**Secondary Nav** - The 380px middle column with contextual navigation. Content changes based on the active Section.
+- Components: `SecondaryNav`, `[Section]SecondaryNav` (section-specific variants)
 - See [Layout](layout.md#navigation) for implementation details
 
 **Page** - The primary content region on the right
@@ -62,7 +63,7 @@ Naming conventions for UI areas, components, state variables, and files. This gu
 - See [Layout](layout.md#container-component) for implementation details
 
 **Mobile Nav** - Combined navigation for mobile devices
-- Components: `MobileNavTrigger` (hamburger button), `MobileNavOverlay` (sheet)
+- Components: `MobileNavTrigger` (hamburger button), `DraggableMobileNav` (drawer with swipe-to-close)
 - See [Layout](layout.md#responsive-patterns) for mobile patterns
 
 ## Component Naming Patterns
@@ -80,17 +81,9 @@ See [Components](components.md#container) for usage examples.
 - `PrimaryNav` - Main left sidebar
 - `ProfileMenu` - Profile avatar button in primary nav footer; opens popover with Settings and theme toggle
 - `SecondaryNav` - Middle column base component
-- `[Section]SecondaryNav` - Section-specific navigation (e.g., `ProjectsSecondaryNav`)
+- `[Section]SecondaryNav` - Section-specific navigation (e.g., `BoardsSecondaryNav`, `SettingsSecondaryNav`)
 - `MobileNavTrigger` - Mobile menu button
-- `MobileNavOverlay` - Mobile navigation sheet
-
-### Cards
-
-- `FactCard` - Search result display
-- `EntityCard` - Entity list item
-- `EpisodeCard` - Episode list item
-
-See [Data Presentation](data-presentation.md) for card patterns.
+- `DraggableMobileNav` - Mobile navigation drawer with swipe-to-close and drag-to-open-from-edge
 
 ### Dialogs
 
@@ -109,11 +102,11 @@ The **ProfileMenu** component lives in the primary nav footer and provides acces
 **Popover:**
 - Width: `w-52`, aligned `start`, side `top`, offset `10`
 - Menu items:
-  - **Settings** — navigates to `/system` page
+  - **Settings** — navigates to the app's settings section
   - **Toggle Dark Mode** — switches light/dark via `next-themes`
 
 **Props:**
-- `onAfterClick?: () => void` — called after any menu action (used to close the mobile nav overlay)
+- `onAfterClick?: () => void` — called after any menu action (used to close the mobile nav)
 
 **Usage:**
 ```tsx
@@ -160,11 +153,9 @@ See [Patterns](patterns.md) for interaction patterns.
 Array format: `[resource, scope, ...params]`
 
 ```tsx
-["entity", uuid]                      // Single entity
-["entities-list", groupId, limit]     // Entity list
-["episodes", groupId, 10]             // Episodes
-["search", groupId, query]            // Search results
-["agent-tasks", enabledFilter]        // Agent tasks
+["items", id]                         // Single item
+["items-list", scopeId, limit]        // Item list
+["search", scopeId, query]            // Search results
 ```
 
 ## File Naming Conventions
@@ -174,16 +165,15 @@ Array format: `[resource, scope, ...params]`
 **PascalCase** matching component name:
 ```
 Container.tsx
-EntityCard.tsx
 PrimaryNav.tsx
+BoardsSecondaryNav.tsx
 ```
 
 ### Utilities and Services
 
 **camelCase** describing function/purpose:
 ```
-graphitiService.ts
-agentTasksService.ts
+apiService.ts
 cronFormatter.ts
 ```
 
@@ -191,8 +181,8 @@ cronFormatter.ts
 
 **camelCase** describing domain:
 ```
-graphiti.ts
-agentTasks.ts
+navigation.ts
+boards.ts
 ```
 
 ### Directories
@@ -203,6 +193,8 @@ src/components/
 src/components/ui/
 src/components/navigation/
 src/components/container/
+src/components/mobile/
+src/components/shared/
 ```
 
 ## Folder Organization
@@ -210,47 +202,34 @@ src/components/container/
 ```
 src/components/
 ├── ui/              # ShadCN UI library
-├── container/       # Container components
+├── container/       # Container components (Container, ContainerToolButton, ContainerToolToggle)
 ├── navigation/      # Navigation components (PrimaryNav, SecondaryNav, ProfileMenu, etc.)
 ├── dialogs/         # Dialog components
-├── sidebar/         # (empty)
-├── search/          # Search-related components
-├── entities/        # Entity-related components
-└── episodes/        # Episode-related components
+├── mobile/          # Mobile-specific components (MobileOverflowMenu, MobileBottomDrawer)
+└── shared/          # Shared utility components (SidePanelHeader, etc.)
 ```
 
 See [Components](components.md) for detailed component documentation.
-
-## Service Naming
-
-### API Services
-
-**Singleton pattern** with descriptive names:
-
-```tsx
-graphitiService.search()           // Graphiti API
-graphitiService.getEntity()
-
-agentTasksService.listTasks()      // Agent tasks API
-agentTasksService.getTask()
-```
 
 ## Quick Reference
 
 | Concept | Name | Example |
 |---------|------|---------|
+| Top-level nav unit | Section | "Boards section", "Settings section" |
 | Left sidebar | Primary Nav | `PrimaryNav` |
-| Middle column | Secondary Nav | `SecondaryNav` |
+| Middle column | Secondary Nav | `SecondaryNav`, `BoardsSecondaryNav` |
 | Right content | Page | `Container` |
-| Mobile menu | Mobile Nav | `MobileNavTrigger`, `MobileNavOverlay` |
+| Mobile menu | Mobile Nav | `MobileNavTrigger`, `DraggableMobileNav` |
 | Profile menu | ProfileMenu | `<ProfileMenu onAfterClick={...} />` |
 | Page wrapper | Container | `<Container title="...">` |
 | Toolbar button | ContainerToolButton | `<ContainerToolButton>` |
+| Toolbar toggle | ContainerToolToggle | `<ContainerToolToggle pressed={...}>` |
+| Secondary nav button | SecondaryNavToolButton | `<SecondaryNavToolButton>` |
+| Side panel header | SidePanelHeader | `<SidePanelHeader title="...">` |
 | Boolean state | is[State] | `isLoading`, `isOpen` |
 | Event handler | handle[Action] | `handleSubmit` |
 | Callback prop | on[Action] | `onSubmit` |
-| Query key | [resource, ...] | `["entity", uuid]` |
-| Component file | PascalCase | `EntityCard.tsx` |
+| Component file | PascalCase | `BoardsSecondaryNav.tsx` |
 | Utility file | camelCase | `cronFormatter.ts` |
 
 ## See Also
