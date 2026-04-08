@@ -31,7 +31,9 @@ import {
   Paperclip,
   X,
   FileText,
+  TerminalSquare,
 } from "lucide-react";
+import { TerminalSidePanel } from "@/components/terminal/TerminalSidePanel";
 import { toast } from "sonner";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 
@@ -88,6 +90,8 @@ export default function ChatSession() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [terminalEverOpened, setTerminalEverOpened] = useState(false);
 
   // Single data model for both live streaming and persisted messages, keyed by executionId.
   const [executionData, setExecutionData] = useState<Map<string, ExecutionData>>(new Map());
@@ -970,6 +974,21 @@ export default function ChatSession() {
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
+                <div className="w-px h-5 bg-border mx-1" />
+                <button
+                  className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors ${
+                    terminalOpen
+                      ? "text-green-400 bg-green-500/10 hover:bg-green-500/20"
+                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
+                  onClick={() => {
+                    setTerminalOpen((v) => !v);
+                    setTerminalEverOpened(true);
+                  }}
+                  title={terminalOpen ? "Hide terminal" : "Open terminal"}
+                >
+                  <TerminalSquare className="h-4 w-4" />
+                </button>
               </div>
               <div className="flex gap-2">
                 {isActiveSession ? (
@@ -992,6 +1011,16 @@ export default function ChatSession() {
           </div>
         </div>
       </Container>
+
+      {/* Terminal side panel — always mounted once opened to preserve xterm state */}
+      {terminalEverOpened && sessionId && (
+        <TerminalSidePanel
+          isOpen={terminalOpen}
+          chatSessionId={sessionId}
+          cwd={session?.config?.cwd || "~"}
+          onClose={() => setTerminalOpen(false)}
+        />
+      )}
 
       {/* Settings dialog */}
       {session && (
