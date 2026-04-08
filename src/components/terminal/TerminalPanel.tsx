@@ -9,20 +9,24 @@
  * - Uses ResizeObserver + FitAddon to keep terminal dimensions in sync with container
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { SerializeAddon } from '@xterm/addon-serialize';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { terminalService } from '@/api/terminalService';
-import { X } from 'lucide-react';
+import DestructiveConfirmationDialog from '@/components/dialogs/DestructiveConfirmationDialog';
+import { X, ChevronRight } from 'lucide-react';
 
 interface TerminalPanelProps {
   sessionId: string;
   cwd: string;
   isOpen: boolean;
-  onClose: () => void;
+  /** Hides the panel without ending the session (slide out) */
+  onCollapse: () => void;
+  /** Ends and deletes the session, then closes the panel */
+  onDelete: () => void;
   onSessionEnded?: () => void;
 }
 
@@ -52,12 +56,13 @@ const XTERM_THEME = {
   selectionBackground: '#ffffff33',
 };
 
-export function TerminalPanel({ sessionId, cwd, isOpen, onClose, onSessionEnded }: TerminalPanelProps) {
+export function TerminalPanel({ sessionId, cwd, isOpen, onCollapse, onDelete, onSessionEnded }: TerminalPanelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
   const serializeAddonRef = useRef<SerializeAddon | null>(null);
   const cleanupRef = useRef<(() => void)[]>([]);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
 
   // Re-focus terminal when panel becomes visible (after CSS slide-in transition)
   useEffect(() => {
@@ -162,17 +167,29 @@ export function TerminalPanel({ sessionId, cwd, isOpen, onClose, onSessionEnded 
     <div className="flex flex-col h-full bg-[#0d0d0d]">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/10 bg-[#111] shrink-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
           <span className="text-xs text-white/50 font-mono truncate">{cwd}</span>
         </div>
-        <button
-          className="h-7 w-7 flex items-center justify-center rounded text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors shrink-0 ml-2"
-          onClick={onClose}
-          title="Close terminal"
-        >
-          <X className="h-4 w-4" />
-        </button>
+
+        <div className="flex items-center gap-1 shrink-0 ml-2">
+          {/* Collapse — hides panel, keeps session alive */}
+          <button
+            className="h-7 w-7 flex items-center justify-center rounded text-white/40 hover:text-white/80 hover:bg-white/10 transition-colors"
+            onClick={onCollapse}
+            title="Collapse panel"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {/* X — ends and deletes the session */}
+          <button
+            className="h-7 w-7 flex items-center justify-center rounded text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
+            onClick={() => setConfirmingDelete(true)}
+            title="End session"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
       {/* Terminal container — overflow:hidden traps scroll events inside xterm */}
@@ -180,6 +197,17 @@ export function TerminalPanel({ sessionId, cwd, isOpen, onClose, onSessionEnded 
         ref={containerRef}
         className="flex-1 min-h-0 p-1 overflow-hidden"
         style={{ background: '#0d0d0d' }}
+      />
+
+      <DestructiveConfirmationDialog
+        open={confirmingDelete}
+        onOpenChange={(open) => { if (!open) setConfirmingDelete(false); }}
+        onConfirm={onDelete}
+        onCancel={() => setConfirmingDelete(false)}
+        title="End terminal session?"
+        description="This will kill the terminal session and its tmux process. You can start a new terminal from this chat at any time."
+        confirmText="End session"
+        confirmLoadingText="Ending..."
       />
     </div>
   );

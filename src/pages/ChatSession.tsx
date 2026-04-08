@@ -34,6 +34,7 @@ import {
   TerminalSquare,
 } from "lucide-react";
 import { TerminalSidePanel } from "@/components/terminal/TerminalSidePanel";
+import { useActiveTerminalSessions } from "@/lib/terminalSessions";
 import { toast } from "sonner";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 
@@ -92,6 +93,8 @@ export default function ChatSession() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [terminalEverOpened, setTerminalEverOpened] = useState(false);
+  const activeTerminalSessions = useActiveTerminalSessions();
+  const hasActiveTerminal = !!sessionId && activeTerminalSessions.has(sessionId);
 
   // Single data model for both live streaming and persisted messages, keyed by executionId.
   const [executionData, setExecutionData] = useState<Map<string, ExecutionData>>(new Map());
@@ -979,7 +982,9 @@ export default function ChatSession() {
                   className={`h-8 w-8 flex items-center justify-center rounded-md transition-colors ${
                     terminalOpen
                       ? "text-green-400 bg-green-500/10 hover:bg-green-500/20"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      : hasActiveTerminal
+                        ? "text-green-500/70 hover:text-green-400 hover:bg-green-500/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent"
                   }`}
                   onClick={() => {
                     setTerminalOpen((v) => !v);

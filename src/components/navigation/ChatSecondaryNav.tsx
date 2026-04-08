@@ -18,8 +18,9 @@ import { DeleteGroupDialog } from "@/components/chat-sessions/DeleteGroupDialog"
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import {
   Plus, MessageSquare, Search, X,
-  Folder, FolderPlus, MoreHorizontal, ChevronLeft, Pencil, Trash2,
+  Folder, FolderPlus, MoreHorizontal, ChevronLeft, Pencil, Trash2, SquareTerminal,
 } from "lucide-react";
+import { useActiveTerminalSessions } from "@/lib/terminalSessions";
 import { formatDistanceToNow } from "date-fns";
 
 const RECENT_GROUPS_LIMIT = 5;
@@ -125,6 +126,8 @@ export function ChatSecondaryNav({
     },
   });
 
+  const activeTerminalSessions = useActiveTerminalSessions();
+
   const allGroups = groupsData?.groups ?? [];
   const recentGroups = allGroups.slice(0, RECENT_GROUPS_LIMIT);
   const hasMoreGroups = allGroups.length > RECENT_GROUPS_LIMIT;
@@ -215,7 +218,10 @@ export function ChatSecondaryNav({
           isActive={isActive}
           onClick={() => handleNavigation(`/chat/${session.id}`)}
         >
-          <MessageSquare className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground self-start mt-0.5" />
+          {activeTerminalSessions.has(session.id)
+            ? <SquareTerminal className="h-4 w-4 mr-3 flex-shrink-0 text-green-500 self-start mt-0.5" />
+            : <MessageSquare className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground self-start mt-0.5" />
+          }
           <div className="flex flex-col items-start min-w-0 flex-1 gap-0.5">
             <SecondaryNavItemTitle className="flex-1">{session.name}</SecondaryNavItemTitle>
             <SecondaryNavItemSubtitle>

@@ -18,6 +18,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { TerminalPanel } from './TerminalPanel';
 import { terminalService } from '@/api/terminalService';
+import { addActiveTerminalSession, removeActiveTerminalSession } from '@/lib/terminalSessions';
 import { Loader2 } from 'lucide-react';
 
 interface TerminalSidePanelProps {
@@ -50,6 +51,7 @@ export function TerminalSidePanel({ isOpen, chatSessionId, cwd, onClose }: Termi
     // service restarted, or user navigated away and came back.
     try {
       await terminalService.attachSession(terminalSessionId);
+      addActiveTerminalSession(terminalSessionId);
       setPanelState('ready');
       return;
     } catch (err: unknown) {
@@ -65,6 +67,7 @@ export function TerminalSidePanel({ isOpen, chatSessionId, cwd, onClose }: Termi
     // Create a new session using the chat session ID as the terminal session ID
     try {
       await terminalService.createSession(activeCwd.current, 120, 40, terminalSessionId);
+      addActiveTerminalSession(terminalSessionId);
       setPanelState('ready');
     } catch {
       setErrorMsg('Failed to create terminal session');
@@ -81,12 +84,24 @@ export function TerminalSidePanel({ isOpen, chatSessionId, cwd, onClose }: Termi
   }, [isOpen, initSession]);
 
   // Called when the tmux session truly exits (user typed `exit` etc.) or on retry.
-  // Increments mountKey to remount TerminalPanel (fresh xterm), then re-initializes.
+  // Removes from active tracking, increments mountKey to remount TerminalPanel, then re-initializes.
   const handleRetry = useCallback(() => {
+    removeActiveTerminalSession(terminalSessionId);
     hasInitialized.current = false;
     setMountKey(k => k + 1);
     initSession();
-  }, [initSession]);
+  }, [terminalSessionId, initSession]);
+
+  // Called when the user confirms deleting the session (X button).
+  // Kills the tmux session, removes tracking, resets state, closes panel.
+  const handleDelete = useCallback(() => {
+    removeActiveTerminalSession(terminalSessionId);
+    terminalService.deleteSession(terminalSessionId).catch(() => {});
+    hasInitialized.current = false;
+    setPanelState('idle');
+    setMountKey(k => k + 1);
+    onClose();
+  }, [terminalSessionId, onClose]);
 
   // Dispatch resize event after open transition so FitAddon sizes correctly
   const prevOpen = useRef(false);
@@ -137,7 +152,8 @@ export function TerminalSidePanel({ isOpen, chatSessionId, cwd, onClose }: Termi
           sessionId={terminalSessionId}
           cwd={cwd}
           isOpen={isOpen}
-          onClose={onClose}
+          onCollapse={onClose}
+          onDelete={handleDelete}
           onSessionEnded={handleRetry}
         />
       )}
