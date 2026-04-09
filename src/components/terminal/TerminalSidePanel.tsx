@@ -120,10 +120,10 @@ export function TerminalSidePanel({ isOpen, chatSessionId, cwd, onClose }: Termi
 
   return (
     <div
-      className="fixed right-0 z-50 flex flex-col bg-[#0d0d0d] border-l border-white/10 shadow-2xl w-full sm:w-[clamp(600px,70vw,1200px)]"
+      className="fixed inset-y-0 right-0 z-50 flex flex-col bg-[#0d0d0d] border-l border-white/10 shadow-2xl w-full sm:w-[clamp(600px,70vw,1200px)]"
       style={{
-        top: 'env(safe-area-inset-top, 0px)',
-        bottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         transform: isOpen ? 'translateX(0)' : 'translateX(100%)',
         transition: 'transform 200ms ease-in-out',
         pointerEvents: isOpen ? 'auto' : 'none',
