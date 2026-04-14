@@ -171,6 +171,37 @@ class DocumentsService {
     );
   }
 
+  async moveDocument(fromPath: string, toPath: string): Promise<DocumentViewResponse> {
+    const params = new URLSearchParams({ path: fromPath });
+    return this.fetch<DocumentViewResponse>(
+      `/api/v1/documents?${params}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ newPath: toPath }),
+      }
+    );
+  }
+
+  async createFolder(path: string): Promise<{ path: string }> {
+    return this.fetch<{ path: string }>(
+      "/api/v1/documents/folders",
+      {
+        method: "POST",
+        body: JSON.stringify({ path }),
+      }
+    );
+  }
+
+  async deleteFolder(path: string): Promise<void> {
+    const params = new URLSearchParams({ path });
+    return this.fetch<void>(
+      `/api/v1/documents/folders?${params}`,
+      {
+        method: "DELETE",
+      }
+    );
+  }
+
   async listBookmarks(tags?: string[]): Promise<BookmarkListResponse> {
     const params = new URLSearchParams();
     if (tags && tags.length > 0) {

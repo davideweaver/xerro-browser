@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import type React from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { documentsService } from "@/api/documentsService";
 import { Button } from "@/components/ui/button";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
@@ -9,9 +10,11 @@ import {
 } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
-import { Search, ChevronLeft, Folder, FileText, RefreshCw, PenTool, Bookmark } from "lucide-react";
+import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
+import { Search, ChevronLeft, Folder, FileText, RefreshCw, PenTool, Bookmark, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getFileType, DocumentFileType } from "@/lib/fileTypeUtils";
+import type { FolderItem } from "@/types/documents";
 
 const DOCUMENTS_VIEW_MODE_KEY = "documents-view-mode";
 
@@ -30,6 +33,9 @@ export function DocumentsSecondaryNav({
   onNavigate,
   onDocumentSelect,
 }: DocumentsSecondaryNavProps) {
+  const queryClient = useQueryClient();
+  const [folderToDelete, setFolderToDelete] = useState<FolderItem | null>(null);
+
   // Initialize view mode from localStorage
   const [viewMode, setViewMode] = useState<"folders" | "bookmarks">(() => {
     const saved = localStorage.getItem(DOCUMENTS_VIEW_MODE_KEY);
@@ -103,6 +109,39 @@ export function DocumentsSecondaryNav({
     const newPath = breadcrumbs.slice(0, index + 1).join("/");
     onFolderChange(newPath);
   };
+
+  const [checkingFolder, setCheckingFolder] = useState<string | null>(null);
+
+  const handleDeleteClick = async (item: FolderItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setCheckingFolder(item.path);
+    try {
+      const contents = await documentsService.getFolderStructure(item.path);
+      if (contents.length > 0) {
+        toast.error("Cannot delete folders that contain files or subfolders");
+      } else {
+        setFolderToDelete(item);
+      }
+    } catch {
+      toast.error("Failed to check folder contents");
+    } finally {
+      setCheckingFolder(null);
+    }
+  };
+
+  const deleteFolderMutation = useMutation({
+    mutationFn: (path: string) => documentsService.deleteFolder(path),
+    onSuccess: () => {
+      setFolderToDelete(null);
+      queryClient.invalidateQueries({ queryKey: ["documents-nav", currentFolderPath] });
+      toast.success("Folder deleted");
+    },
+    onError: (error) => {
+      setFolderToDelete(null);
+      const msg = error instanceof Error ? error.message : "Failed to delete folder";
+      toast.error(msg);
+    },
+  });
 
   const handleRefresh = () => {
     if (viewMode === "folders") {
@@ -225,22 +264,36 @@ export function DocumentsSecondaryNav({
 
                   if (item.type === "folder") {
                     return (
-                      <SecondaryNavItem
-                        key={item.path}
-                        isActive={false}
-                        onClick={() => onFolderChange(item.path)}
-                      >
-                        <Folder className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
-                        <div className="flex flex-col items-start min-w-0 flex-1">
-                          <SecondaryNavItemTitle>{item.name}</SecondaryNavItemTitle>
-                          {item.documentCount !== undefined && (
-                            <SecondaryNavItemSubtitle>
-                              {item.documentCount}{" "}
-                              {item.documentCount === 1 ? "document" : "documents"}
-                            </SecondaryNavItemSubtitle>
+                      <div key={item.path} className="relative group/folder">
+                        <SecondaryNavItem
+                          isActive={false}
+                          onClick={() => onFolderChange(item.path)}
+                          className="pr-8"
+                        >
+                          <Folder className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
+                          <div className="flex flex-col items-start min-w-0 flex-1">
+                            <SecondaryNavItemTitle>{item.name}</SecondaryNavItemTitle>
+                            {item.documentCount !== undefined && (
+                              <SecondaryNavItemSubtitle>
+                                {item.documentCount}{" "}
+                                {item.documentCount === 1 ? "document" : "documents"}
+                              </SecondaryNavItemSubtitle>
+                            )}
+                          </div>
+                        </SecondaryNavItem>
+                        <button
+                          className="absolute right-2 top-1/2 -translate-y-1/2 hidden [@media(pointer:fine)]:group-hover/folder:flex h-6 w-6 items-center justify-center rounded hover:bg-destructive/15 hover:text-destructive text-muted-foreground/50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
+                          title="Delete folder"
+                          disabled={checkingFolder === item.path}
+                          onClick={(e) => handleDeleteClick(item, e)}
+                        >
+                          {checkingFolder === item.path ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
                           )}
-                        </div>
-                      </SecondaryNavItem>
+                        </button>
+                      </div>
                     );
                   }
 
@@ -346,6 +399,15 @@ export function DocumentsSecondaryNav({
           </>
         )}
       </div>
+      <DestructiveConfirmationDialog
+        open={folderToDelete !== null}
+        onOpenChange={(open) => { if (!open) setFolderToDelete(null); }}
+        onConfirm={() => folderToDelete && deleteFolderMutation.mutate(folderToDelete.path)}
+        onCancel={() => setFolderToDelete(null)}
+        title="Delete Folder"
+        description={`Delete "${folderToDelete?.name}"? This cannot be undone. The folder must be empty.`}
+        isLoading={deleteFolderMutation.isPending}
+      />
     </SecondaryNavContainer>
   );
 }

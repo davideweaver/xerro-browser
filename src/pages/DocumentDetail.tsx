@@ -5,7 +5,7 @@ import Container from "@/components/container/Container";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { ContainerToolToggle } from "@/components/container/ContainerToolToggle";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ChevronLeft, FolderOpen, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X } from "lucide-react";
+import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { getSearchQuery } from "@/lib/documentsSearchStorage";
 import { setCurrentFolderPath, clearLastDocumentPath } from "@/lib/documentsStorage";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
+import { MoveDocumentDialog } from "@/components/dialogs/MoveDocumentDialog";
 import { useState, useCallback, useRef } from "react";
 import { MarkdownViewer, ExcalidrawViewer } from "@/components/document-viewers";
 import { getFileType, DocumentFileType } from "@/lib/fileTypeUtils";
@@ -31,6 +32,7 @@ export default function DocumentDetail() {
   const queryClient = useQueryClient();
   const documentPath = params["*"] || "";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
@@ -79,6 +81,28 @@ export default function DocumentDetail() {
 
       // Navigate immediately to documents root
       navigate("/documents");
+    },
+  });
+
+  // Move document mutation
+  const moveDocumentMutation = useMutation({
+    mutationFn: (newPath: string) => documentsService.moveDocument(documentPath, newPath),
+    onSuccess: (_, newPath) => {
+      setMoveDialogOpen(false);
+
+      const oldParentPath = documentPath.split("/").slice(0, -1).join("/");
+      const newParentPath = newPath.split("/").slice(0, -1).join("/");
+
+      // Invalidate both old and new parent folders in the nav
+      queryClient.invalidateQueries({ queryKey: ["documents-nav", oldParentPath] });
+      queryClient.invalidateQueries({ queryKey: ["documents-nav", newParentPath] });
+      queryClient.invalidateQueries({ queryKey: ["documents-nav"] });
+
+      toast.success("Document moved successfully");
+      navigate(`/documents/${newPath}`);
+    },
+    onError: () => {
+      toast.error("Failed to move document");
     },
   });
 
@@ -452,6 +476,16 @@ export default function DocumentDetail() {
               >
                 <FolderOpen className="h-4 w-4" />
               </ContainerToolButton>
+              <div className="hidden md:flex">
+                <ContainerToolButton
+                  size="icon"
+                  onClick={() => setMoveDialogOpen(true)}
+                  disabled={!documentPath}
+                  title="Move document"
+                >
+                  <FolderInput className="h-4 w-4" />
+                </ContainerToolButton>
+              </div>
 
               {/* Desktop: inline buttons (hidden on mobile) */}
               <div className="hidden md:flex items-center gap-2">
@@ -505,6 +539,12 @@ export default function DocumentDetail() {
                   >
                     <RefreshCw className="h-4 w-4" />
                   </ContainerToolButton>
+                  <MobileDrawerButton
+                    onClick={() => setMoveDialogOpen(true)}
+                    icon={<FolderInput className="h-4 w-4" />}
+                  >
+                    Move
+                  </MobileDrawerButton>
                   <MobileDrawerButton
                     onClick={handleCopyContent}
                     icon={<Copy className="h-4 w-4" />}
@@ -612,6 +652,15 @@ export default function DocumentDetail() {
           <p className="text-muted-foreground">Document not found</p>
         </div>
       )}
+
+      {/* Move Document Dialog */}
+      <MoveDocumentDialog
+        open={moveDialogOpen}
+        onOpenChange={setMoveDialogOpen}
+        documentPath={documentPath}
+        onMove={(newPath) => moveDocumentMutation.mutate(newPath)}
+        isMoving={moveDocumentMutation.isPending}
+      />
 
       {/* Delete Confirmation Dialog */}
       <DestructiveConfirmationDialog

@@ -1,6 +1,7 @@
 import * as ReactDialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 
 export type BaseDialogProps = {
   open: boolean;
@@ -9,6 +10,17 @@ export type BaseDialogProps = {
   footer?: React.ReactNode;
   footerHeight?: number;
   children: React.ReactNode;
+  /**
+   * "fullscreen" — always fills the screen (default, original behaviour).
+   * "floating"   — fullscreen on mobile, centered floating window on desktop (md+).
+   */
+  variant?: "fullscreen" | "floating";
+  /**
+   * Extra Tailwind classes applied to the dialog panel in floating mode.
+   * Use this to control width/min-height, e.g. "md:max-w-md md:min-h-[500px]".
+   * Only takes effect when variant="floating".
+   */
+  floatingClassName?: string;
 };
 
 export function BaseDialog({
@@ -18,8 +30,11 @@ export function BaseDialog({
   footer,
   footerHeight = 64,
   children,
+  variant = "fullscreen",
+  floatingClassName,
 }: BaseDialogProps) {
   const headerHeight = 64;
+  const isFloating = variant === "floating";
   const contentRef = useRef<HTMLDivElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const footerRef = useRef<HTMLDivElement | null>(null);
@@ -41,8 +56,8 @@ export function BaseDialog({
   // flex column — header and footer are flex children that naturally stay at the
   // visible edges; the scroll area fills whatever space remains.
   //
-  // visualViewport.resize fires when the keyboard appears/disappears.
-  // visualViewport.scroll fires when iOS pans the viewport (offsetTop changes).
+  // In floating mode on desktop (md+), CSS handles positioning so we skip JS
+  // pinning and clear any previously-set inline styles instead.
   useEffect(() => {
     if (!open) return;
     const vv = window.visualViewport;
@@ -50,6 +65,17 @@ export function BaseDialog({
     function layout() {
       const el = contentRef.current;
       if (!el) return;
+
+      const isDesktop = window.matchMedia("(min-width: 768px)").matches;
+
+      if (isFloating && isDesktop) {
+        // Let CSS position the floating dialog; clear any JS-set styles.
+        el.style.top = "";
+        el.style.height = "";
+        if (footerRef.current) footerRef.current.style.marginBottom = "";
+        return;
+      }
+
       const top = vv ? Math.round(vv.offsetTop) : 0;
       const height = vv ? Math.round(vv.height) : window.innerHeight;
       el.style.top = `${top}px`;
@@ -66,14 +92,18 @@ export function BaseDialog({
     vv?.addEventListener("resize", layout);
     vv?.addEventListener("scroll", layout);
     window.addEventListener("orientationchange", layout);
+    // Also re-run when the viewport width crosses the md breakpoint
+    const mq = window.matchMedia("(min-width: 768px)");
+    mq.addEventListener("change", layout);
     layout();
 
     return () => {
       vv?.removeEventListener("resize", layout);
       vv?.removeEventListener("scroll", layout);
       window.removeEventListener("orientationchange", layout);
+      mq.removeEventListener("change", layout);
     };
-  }, [open]);
+  }, [open, isFloating]);
 
   // lock background scroll while dialog is open (and restore on close)
   useEffect(() => {
@@ -155,18 +185,41 @@ export function BaseDialog({
         <ReactDialog.Overlay className="fixed inset-0 z-[1000] bg-black/50" />
 
         {/*
-         * ReactDialog.Content covers the full screen (inset-0) so its bg-background
+         * Fullscreen: ReactDialog.Content covers the full screen so its bg-background
          * fills the gap behind the keyboard. The inner wrapper is sized to the visual
          * viewport via JS (top/height) so the flex layout stays within the visible area.
+         *
+         * Floating (desktop): ReactDialog.Content is centered via CSS translate. The
+         * inner wrapper uses max-h so it auto-sizes to content and scrolls when tall.
+         * The JS viewport-pinning is skipped; CSS handles everything.
          */}
         <ReactDialog.Content
           aria-label="dialog-content"
-          className="fixed inset-0 z-[1001] bg-background max-w-4xl mx-auto overflow-hidden"
+          className={cn(
+            "fixed z-[1001] bg-background overflow-hidden",
+            isFloating
+              ? cn(
+                  // Mobile: fullscreen (same as fullscreen variant)
+                  "inset-0",
+                  // Desktop: floating centered window
+                  "md:inset-auto md:left-1/2 md:top-1/2 md:translate-x-[-50%] md:translate-y-[-50%]",
+                  "md:w-full md:max-w-lg md:rounded-xl md:shadow-2xl md:border",
+                  floatingClassName
+                )
+              : "inset-0 max-w-4xl mx-auto"
+          )}
         >
           <div
             ref={contentRef}
-            className="absolute inset-x-0 flex flex-col overflow-hidden"
-            style={{ top: 0, height: "100dvh" }}
+            className={cn(
+              "flex flex-col overflow-hidden",
+              isFloating
+                // Mobile: absolute fill (JS will set top/height)
+                // Desktop: static, sized by content up to max-h
+                ? "absolute inset-x-0 md:static md:max-h-[85vh]"
+                : "absolute inset-x-0"
+            )}
+            style={isFloating ? undefined : { top: 0, height: "100dvh" }}
           >
             {/* header */}
             <div
@@ -197,7 +250,7 @@ export function BaseDialog({
             <div
               ref={scrollRef}
               aria-label="dialog-scroll"
-              className="flex-1 overflow-y-auto"
+              className="flex-1 overflow-y-auto min-h-0"
               style={{
                 WebkitOverflowScrolling: "touch",
                 padding: "12px 16px",
