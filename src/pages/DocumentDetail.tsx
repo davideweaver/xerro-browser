@@ -5,7 +5,7 @@ import Container from "@/components/container/Container";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { ContainerToolToggle } from "@/components/container/ContainerToolToggle";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X } from "lucide-react";
+import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X, SlidersHorizontal } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +19,7 @@ import { getSearchQuery } from "@/lib/documentsSearchStorage";
 import { setCurrentFolderPath, clearLastDocumentPath } from "@/lib/documentsStorage";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import { MoveDocumentDialog } from "@/components/dialogs/MoveDocumentDialog";
+import { FrontmatterSheet } from "@/components/dialogs/FrontmatterSheet";
 import { useState, useCallback, useRef } from "react";
 import { MarkdownViewer, ExcalidrawViewer } from "@/components/document-viewers";
 import { getFileType, DocumentFileType } from "@/lib/fileTypeUtils";
@@ -33,10 +34,13 @@ export default function DocumentDetail() {
   const documentPath = params["*"] || "";
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [propertiesOpen, setPropertiesOpen] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Track self-initiated removals so WebSocket events don't show redundant toasts
+  const selfRemovedRef = useRef(false);
 
 
   // Check if document is bookmarked
@@ -59,6 +63,7 @@ export default function DocumentDetail() {
     onSuccess: () => {
       // Mark as deleted to prevent query from re-enabling
       setIsDeleted(true);
+      selfRemovedRef.current = true;
 
       // Close dialog immediately
       setDeleteDialogOpen(false);
@@ -89,6 +94,7 @@ export default function DocumentDetail() {
     mutationFn: (newPath: string) => documentsService.moveDocument(documentPath, newPath),
     onSuccess: (_, newPath) => {
       setMoveDialogOpen(false);
+      selfRemovedRef.current = true;
 
       const oldParentPath = documentPath.split("/").slice(0, -1).join("/");
       const newParentPath = newPath.split("/").slice(0, -1).join("/");
@@ -150,8 +156,7 @@ export default function DocumentDetail() {
 
   // Memoize callbacks to prevent re-subscriptions
   // Note: These must come AFTER the useQuery hook so refetch is available
-  const handleDocumentAdded = useCallback((event: DocumentChangeEvent) => {
-    toast.success(`Document added: ${event.path}`);
+  const handleDocumentAdded = useCallback((_event: DocumentChangeEvent) => {
     queryClient.invalidateQueries({ queryKey: ["documents-nav"] });
   }, [queryClient]);
 
@@ -168,15 +173,20 @@ export default function DocumentDetail() {
 
   const handleDocumentRemoved = useCallback((event: DocumentChangeEvent) => {
     if (event.path === documentPath || event.absolutePath.endsWith(documentPath)) {
+      queryClient.invalidateQueries({ queryKey: ["documents-nav"] });
+      if (selfRemovedRef.current) {
+        // User triggered this removal themselves — mutation already handled feedback
+        return;
+      }
+      // External deletion — notify and redirect
       toast.error(`This document was deleted: ${event.path}`, {
+        id: `doc-removed-${event.path}`,
         description: "Redirecting to documents...",
       });
       setIsDeleted(true);
       clearLastDocumentPath();
-      queryClient.invalidateQueries({ queryKey: ["documents-nav"] });
       setTimeout(() => navigate("/documents"), 1000);
     } else {
-      toast.error(`Document removed: ${event.path}`);
       queryClient.invalidateQueries({ queryKey: ["documents-nav"] });
     }
   }, [documentPath, navigate, queryClient]);
@@ -380,6 +390,20 @@ export default function DocumentDetail() {
     toggleBookmarkMutation.mutate();
   };
 
+  const handlePropertiesSaved = (newPath: string) => {
+    if (newPath !== documentPath) {
+      selfRemovedRef.current = true;
+      const oldParentPath = documentPath.split("/").slice(0, -1).join("/");
+      const newParentPath = newPath.split("/").slice(0, -1).join("/");
+      queryClient.invalidateQueries({ queryKey: ["documents-nav", oldParentPath] });
+      queryClient.invalidateQueries({ queryKey: ["documents-nav", newParentPath] });
+      queryClient.invalidateQueries({ queryKey: ["documents-nav"] });
+      navigate(`/documents/${newPath}`);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["document", documentPath] });
+    }
+  };
+
   // Extract filename and clean up extension
   const pathSegments = documentPath.split("/");
   const rawFileName = pathSegments[pathSegments.length - 1];
@@ -467,6 +491,16 @@ export default function DocumentDetail() {
                   disabled={!documentData}
                 >
                   <Pencil className="h-4 w-4" />
+                </ContainerToolButton>
+              )}
+              {fileType !== DocumentFileType.EXCALIDRAW && (
+                <ContainerToolButton
+                  size="icon"
+                  onClick={() => setPropertiesOpen(true)}
+                  disabled={!documentData}
+                  title="Properties"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
                 </ContainerToolButton>
               )}
               <ContainerToolButton
@@ -652,6 +686,16 @@ export default function DocumentDetail() {
           <p className="text-muted-foreground">Document not found</p>
         </div>
       )}
+
+      {/* Properties Sheet */}
+      <FrontmatterSheet
+        open={propertiesOpen}
+        onOpenChange={setPropertiesOpen}
+        documentPath={documentPath}
+        frontmatter={documentData?.frontmatter ?? {}}
+        bodyContent={documentData?.content ?? ""}
+        onSaved={handlePropertiesSaved}
+      />
 
       {/* Move Document Dialog */}
       <MoveDocumentDialog

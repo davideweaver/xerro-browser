@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { documentsService } from "@/api/documentsService";
 import { Button } from "@/components/ui/button";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
@@ -10,8 +10,15 @@ import {
 } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
-import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
-import { Search, ChevronLeft, Folder, FileText, RefreshCw, PenTool, Bookmark, Trash2, Loader2 } from "lucide-react";
+import { FolderPropertiesSheet } from "@/components/dialogs/FolderPropertiesSheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Search, ChevronLeft, Folder, FileText, PenTool, Bookmark, Settings2, Plus, FolderPlus, FilePlus, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { getFileType, DocumentFileType } from "@/lib/fileTypeUtils";
 import type { FolderItem } from "@/types/documents";
@@ -33,8 +40,7 @@ export function DocumentsSecondaryNav({
   onNavigate,
   onDocumentSelect,
 }: DocumentsSecondaryNavProps) {
-  const queryClient = useQueryClient();
-  const [folderToDelete, setFolderToDelete] = useState<FolderItem | null>(null);
+  const [folderForProperties, setFolderForProperties] = useState<FolderItem | null>(null);
 
   // Initialize view mode from localStorage
   const [viewMode, setViewMode] = useState<"folders" | "bookmarks">(() => {
@@ -110,47 +116,72 @@ export function DocumentsSecondaryNav({
     onFolderChange(newPath);
   };
 
-  const [checkingFolder, setCheckingFolder] = useState<string | null>(null);
+  const [creatingFolder, setCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
 
-  const handleDeleteClick = async (item: FolderItem, e: React.MouseEvent) => {
+  const handlePropertiesClick = (item: FolderItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    setCheckingFolder(item.path);
-    try {
-      const contents = await documentsService.getFolderStructure(item.path);
-      if (contents.length > 0) {
-        toast.error("Cannot delete folders that contain files or subfolders");
-      } else {
-        setFolderToDelete(item);
-      }
-    } catch {
-      toast.error("Failed to check folder contents");
-    } finally {
-      setCheckingFolder(null);
-    }
+    setFolderForProperties(item);
   };
 
-  const deleteFolderMutation = useMutation({
-    mutationFn: (path: string) => documentsService.deleteFolder(path),
+  const createFolderMutation = useMutation({
+    mutationFn: (name: string) => {
+      const path = currentFolderPath ? `${currentFolderPath}/${name}` : name;
+      return documentsService.createFolder(path);
+    },
     onSuccess: () => {
-      setFolderToDelete(null);
-      queryClient.invalidateQueries({ queryKey: ["documents-nav", currentFolderPath] });
-      toast.success("Folder deleted");
+      setCreatingFolder(false);
+      setNewFolderName("");
+      refetch();
+      toast.success("Folder created");
     },
     onError: (error) => {
-      setFolderToDelete(null);
-      const msg = error instanceof Error ? error.message : "Failed to delete folder";
+      const msg = error instanceof Error ? error.message : "Failed to create folder";
       toast.error(msg);
     },
   });
 
-  const handleRefresh = () => {
-    if (viewMode === "folders") {
+  const createDocumentMutation = useMutation({
+    mutationFn: (name: string) => {
+      const path = currentFolderPath ? `${currentFolderPath}/${name}` : name;
+      return documentsService.createDocument(path, "");
+    },
+    onSuccess: (doc) => {
       refetch();
-      toast.success("Folder list refreshed");
-    } else {
-      refetchBookmarks();
-      toast.success("Bookmarks refreshed");
+      handleDocumentClick(doc.path);
+    },
+    onError: (error) => {
+      const msg = error instanceof Error ? error.message : "Failed to create document";
+      toast.error(msg);
+    },
+  });
+
+  const handleNewFolder = () => {
+    setNewFolderName("");
+    setCreatingFolder(true);
+  };
+
+  const handleConfirmNewFolder = () => {
+    const trimmed = newFolderName.trim();
+    if (!trimmed) return;
+    createFolderMutation.mutate(trimmed);
+  };
+
+  const handleCancelNewFolder = () => {
+    setCreatingFolder(false);
+    setNewFolderName("");
+  };
+
+  const handleNewDocument = () => {
+    // Find a unique "Untitled" name not already in the current item list
+    const existingNames = new Set(items.filter(i => i.type === "document").map(i => i.name));
+    let name = "Untitled.md";
+    let counter = 1;
+    while (existingNames.has(name)) {
+      name = `Untitled ${counter}.md`;
+      counter++;
     }
+    createDocumentMutation.mutate(name);
   };
 
   return (
@@ -168,9 +199,28 @@ export function DocumentsSecondaryNav({
               fill={viewMode === "bookmarks" ? "currentColor" : "none"}
             />
           </SecondaryNavToolButton>
-          <SecondaryNavToolButton onClick={handleRefresh}>
-            <RefreshCw size={20} />
-          </SecondaryNavToolButton>
+          {viewMode === "folders" && (
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <SecondaryNavToolButton aria-label="Create new">
+                  <Plus size={20} />
+                </SecondaryNavToolButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={handleNewFolder}>
+                  <FolderPlus className="h-4 w-4 mr-2" />
+                  New Folder
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleNewDocument}
+                  disabled={createDocumentMutation.isPending}
+                >
+                  <FilePlus className="h-4 w-4 mr-2" />
+                  New Document
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <SecondaryNavToolButton
             onClick={() => {
               const path = "/documents/search";
@@ -243,6 +293,36 @@ export function DocumentsSecondaryNav({
         {viewMode === "folders" ? (
           // Folders view
           <>
+            {/* Inline new-folder input */}
+            {creatingFolder && (
+              <div className="flex items-center gap-1 mb-1 px-1">
+                <Folder className="h-4 w-4 shrink-0 text-muted-foreground ml-1" />
+                <Input
+                  autoFocus
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="Folder name"
+                  className="h-7 text-sm px-2"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleConfirmNewFolder();
+                    if (e.key === "Escape") handleCancelNewFolder();
+                  }}
+                />
+                <button
+                  onClick={handleConfirmNewFolder}
+                  disabled={!newFolderName.trim() || createFolderMutation.isPending}
+                  className="h-7 w-7 flex shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-40 disabled:pointer-events-none transition-colors"
+                >
+                  <Check className="h-3.5 w-3.5" />
+                </button>
+                <button
+                  onClick={handleCancelNewFolder}
+                  className="h-7 w-7 flex shrink-0 items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
             {isLoading ? (
               <div className="space-y-1">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -252,7 +332,7 @@ export function DocumentsSecondaryNav({
                   />
                 ))}
               </div>
-            ) : items.length === 0 ? (
+            ) : items.length === 0 && !creatingFolder ? (
               <div className="text-sm text-muted-foreground text-center py-8">
                 No documents in this folder
               </div>
@@ -282,16 +362,11 @@ export function DocumentsSecondaryNav({
                           </div>
                         </SecondaryNavItem>
                         <button
-                          className="absolute right-2 top-1/2 -translate-y-1/2 hidden [@media(pointer:fine)]:group-hover/folder:flex h-6 w-6 items-center justify-center rounded hover:bg-destructive/15 hover:text-destructive text-muted-foreground/50 transition-colors disabled:opacity-50 disabled:pointer-events-none"
-                          title="Delete folder"
-                          disabled={checkingFolder === item.path}
-                          onClick={(e) => handleDeleteClick(item, e)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 flex [@media(pointer:fine)]:hidden [@media(pointer:fine)]:group-hover/folder:flex h-6 w-6 items-center justify-center rounded hover:bg-accent text-muted-foreground/50 hover:text-foreground transition-colors"
+                          title="Folder properties"
+                          onClick={(e) => handlePropertiesClick(item, e)}
                         >
-                          {checkingFolder === item.path ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
+                          <Settings2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
                     );
@@ -399,15 +474,16 @@ export function DocumentsSecondaryNav({
           </>
         )}
       </div>
-      <DestructiveConfirmationDialog
-        open={folderToDelete !== null}
-        onOpenChange={(open) => { if (!open) setFolderToDelete(null); }}
-        onConfirm={() => folderToDelete && deleteFolderMutation.mutate(folderToDelete.path)}
-        onCancel={() => setFolderToDelete(null)}
-        title="Delete Folder"
-        description={`Delete "${folderToDelete?.name}"? This cannot be undone. The folder must be empty.`}
-        isLoading={deleteFolderMutation.isPending}
-      />
+      {folderForProperties && (
+        <FolderPropertiesSheet
+          open={folderForProperties !== null}
+          onOpenChange={(open) => { if (!open) setFolderForProperties(null); }}
+          folder={folderForProperties}
+          parentFolderPath={currentFolderPath}
+          onRenamed={() => setFolderForProperties(null)}
+          onDeleted={() => setFolderForProperties(null)}
+        />
+      )}
     </SecondaryNavContainer>
   );
 }

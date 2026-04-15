@@ -161,6 +161,25 @@ class DocumentsService {
     );
   }
 
+  async updateFrontmatter(
+    path: string,
+    frontmatter: Record<string, string>,
+    bodyContent: string
+  ): Promise<DocumentViewResponse> {
+    const params = new URLSearchParams({ path });
+    const entries = Object.entries(frontmatter).filter(([k]) => k.trim());
+    const fullContent = entries.length > 0
+      ? `---\n${entries.map(([k, v]) => `${k}: ${v}`).join('\n')}\n---\n\n${bodyContent}`
+      : bodyContent;
+    return this.fetch<DocumentViewResponse>(
+      `/api/v1/documents?${params}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ content: fullContent, preserveFrontmatter: false, autoVectorize: true }),
+      }
+    );
+  }
+
   async deleteDocument(path: string): Promise<void> {
     const params = new URLSearchParams({ path });
     return this.fetch<void>(
@@ -182,6 +201,20 @@ class DocumentsService {
     );
   }
 
+  async createDocument(
+    path: string,
+    content = "",
+    frontmatter?: Record<string, unknown>
+  ): Promise<DocumentViewResponse> {
+    return this.fetch<DocumentViewResponse>(
+      "/api/v1/documents",
+      {
+        method: "POST",
+        body: JSON.stringify({ path, content, frontmatter, autoVectorize: true }),
+      }
+    );
+  }
+
   async createFolder(path: string): Promise<{ path: string }> {
     return this.fetch<{ path: string }>(
       "/api/v1/documents/folders",
@@ -198,6 +231,17 @@ class DocumentsService {
       `/api/v1/documents/folders?${params}`,
       {
         method: "DELETE",
+      }
+    );
+  }
+
+  async renameFolder(oldPath: string, newPath: string): Promise<{ path: string }> {
+    const params = new URLSearchParams({ path: oldPath });
+    return this.fetch<{ path: string }>(
+      `/api/v1/documents/folders?${params}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ newPath }),
       }
     );
   }
