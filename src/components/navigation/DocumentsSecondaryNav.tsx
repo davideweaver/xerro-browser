@@ -74,7 +74,6 @@ export function DocumentsSecondaryNav({
   const {
     data: bookmarksData,
     isLoading: bookmarksLoading,
-    refetch: refetchBookmarks,
   } = useQuery({
     queryKey: ["bookmarks"],
     queryFn: () => documentsService.listBookmarks(),
