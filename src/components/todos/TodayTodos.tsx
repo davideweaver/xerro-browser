@@ -6,6 +6,7 @@ import { Circle } from "lucide-react";
 import { todosService } from "@/api/todosService";
 import type { Todo, UpdateTodoInput } from "@/types/todos";
 import { TodoEditSheet } from "@/components/todos/TodoEditSheet";
+import { useTodayTodosConfig } from "@/hooks/use-today-todos-config";
 import { cn } from "@/lib/utils";
 
 const MAX_VISIBLE = 5;
@@ -14,6 +15,7 @@ export function TodayTodos({ className }: { className?: string }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
+  const { config: todosConfig } = useTodayTodosConfig();
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [optimisticDone, setOptimisticDone] = useState<Set<string>>(new Set());
 
@@ -39,7 +41,11 @@ export function TodayTodos({ className }: { className?: string }) {
   });
 
   const allTodos = data?.todos ?? [];
-  const todos = allTodos.filter((t) => !optimisticDone.has(t.id));
+  const todos = allTodos.filter((t) => {
+    if (optimisticDone.has(t.id)) return false;
+    if (!t.projectName) return todosConfig.showNoProject;
+    return todosConfig.projects.includes(t.projectName);
+  });
 
   if (!data || todos.length === 0) return null;
 
