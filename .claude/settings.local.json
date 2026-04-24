@@ -95,7 +95,14 @@
       "Bash(/tmp/analyze_graphiti.txt:*)",
       "Read(//tmp/**)",
       "Bash(strings:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm list:*)",
+      "Bash(tmux -V)",
+      "Read(//Users/dweaver/Library/Logs/xerro/**)",
+      "Read(//Users/dweaver/Projects/ai/claude-assist/projects/xerro-service/node_modules/node-pty/build/**)",
+      "Read(//Users/dweaver/Projects/ai/claude-assist/projects/xerro-service/**)",
+      "Bash(npm rebuild:*)",
+      "mcp__plugin_xerro_xerro__session_search"
     ]
   },
   "enableAllProjectMcpServers": true,

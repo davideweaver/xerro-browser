@@ -158,7 +158,7 @@ function UpcomingRow({
   );
 }
 
-export function UpcomingEvents() {
+export function UpcomingEvents({ className }: { className?: string }) {
   const navigate = useNavigate();
   const today = new Date();
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
@@ -220,7 +220,7 @@ export function UpcomingEvents() {
 
   return (
     <>
-      <div className="mb-6">
+      <div className={cn("mb-6", className)}>
         <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
           Upcoming
         </div>

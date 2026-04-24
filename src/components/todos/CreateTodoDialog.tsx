@@ -1,23 +1,25 @@
 import { useState, useEffect } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, X } from "lucide-react";
+import { CalendarIcon, Check, ChevronsUpDown, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { CreateTodoInput, Todo, UpdateTodoInput } from "@/types/todos";
 import { xerroProjectsService } from "@/api/xerroProjectsService";
+import { todosService } from "@/api/todosService";
 import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BaseDialog } from "@/components/BaseDialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export interface CreateTodoDialogProps {
@@ -45,13 +47,23 @@ export function CreateTodoDialog({
     queryKey: ["xerro-projects-all"],
     queryFn: () => xerroProjectsService.listProjects({ limit: 100 }),
   });
-  const projects = projectsData?.items.map((p) => p.name) ?? [];
+  const { data: todoProjectsData } = useQuery({
+    queryKey: ["todos-projects-all"],
+    queryFn: () => todosService.getProjects(),
+  });
+
+  const xerroProjects = projectsData?.items.map((p) => p.name) ?? [];
+  const todoProjects = todoProjectsData?.projects ?? [];
+  const customProjects = todoProjects.filter((p) => !xerroProjects.includes(p));
+  const allProjects = [...new Set([...xerroProjects, ...customProjects])].sort();
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [projectName, setProjectName] = useState<string | null>(defaultProjectName || null);
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [projectOpen, setProjectOpen] = useState(false);
+  const [projectSearch, setProjectSearch] = useState("");
 
   useEffect(() => {
     if (open) {
@@ -72,6 +84,10 @@ export function CreateTodoDialog({
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCalendarOpen(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProjectOpen(false);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setProjectSearch("");
     }
   }, [open, defaultProjectName, isEditMode, todo]);
 
@@ -160,21 +176,80 @@ export function CreateTodoDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-base">Project</Label>
-            <Select
-              value={projectName ?? "__none__"}
-              onValueChange={(val) => setProjectName(val === "__none__" ? null : val)}
-              disabled={projectNameDisabled}
-            >
-              <SelectTrigger className="text-lg md:text-sm bg-input">
-                <SelectValue placeholder="No project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">No project</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={projectOpen} onOpenChange={setProjectOpen} modal={false}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  disabled={projectNameDisabled}
+                  className="flex h-10 w-full items-center rounded-md border border-input bg-input px-3 py-2 text-lg md:text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <span className={cn("flex-1 text-left", !projectName && "text-muted-foreground")}>
+                    {projectName ?? "No project"}
+                  </span>
+                  <ChevronsUpDown className="h-4 w-4 opacity-50 shrink-0" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[1010]" align="start">
+                <Command>
+                  <CommandInput
+                    placeholder="Search or enter custom name..."
+                    value={projectSearch}
+                    onValueChange={setProjectSearch}
+                  />
+                  <CommandList
+                    onWheel={(e) => {
+                      e.stopPropagation();
+                      e.currentTarget.scrollTop += e.deltaY;
+                    }}
+                  >
+                    <CommandEmpty>
+                      {projectSearch.trim() ? (
+                        <CommandItem
+                          onSelect={() => {
+                            setProjectName(projectSearch.trim());
+                            setProjectSearch("");
+                            setProjectOpen(false);
+                          }}
+                        >
+                          Use &ldquo;{projectSearch.trim()}&rdquo;
+                        </CommandItem>
+                      ) : (
+                        "No projects found."
+                      )}
+                    </CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="__none__"
+                        onSelect={() => { setProjectName(null); setProjectSearch(""); setProjectOpen(false); }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", projectName === null ? "opacity-100" : "opacity-0")} />
+                        No project
+                      </CommandItem>
+                      {allProjects.map((p) => (
+                        <CommandItem
+                          key={p}
+                          value={p}
+                          onSelect={() => { setProjectName(p); setProjectSearch(""); setProjectOpen(false); }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", projectName === p ? "opacity-100" : "opacity-0")} />
+                          {p}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                    {projectSearch.trim() && !allProjects.includes(projectSearch.trim()) && (
+                      <CommandGroup heading="Custom">
+                        <CommandItem
+                          value={`__custom__${projectSearch.trim()}`}
+                          onSelect={() => { setProjectName(projectSearch.trim()); setProjectSearch(""); setProjectOpen(false); }}
+                        >
+                          Use &ldquo;{projectSearch.trim()}&rdquo;
+                        </CommandItem>
+                      </CommandGroup>
+                    )}
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="space-y-2">
             <Label className="text-base">Scheduled date</Label>
