@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState, useCallb
 import { io, Socket } from 'socket.io-client';
 import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent } from '@/types/websocket';
 import type { NotificationCreatedEvent, NotificationReadEvent, NotificationsReadAllEvent, NotificationDeletedEvent } from '@/types/notifications';
+import type { MessageCreatedEvent, MessageUpdatedEvent, MessageDeletedEvent } from '@/types/messages';
 
 interface XerroWebSocketContextValue {
   isConnected: boolean;
@@ -32,6 +33,9 @@ interface XerroWebSocketContextValue {
   subscribeToFeedItemCreated: (callback: (event: FeedItemEvent) => void) => () => void;
   subscribeToFeedItemUpdated: (callback: (event: FeedItemEvent) => void) => () => void;
   subscribeToFeedItemDeleted: (callback: (event: FeedItemDeletedEvent) => void) => () => void;
+  subscribeToMessageCreated: (callback: (event: MessageCreatedEvent) => void) => () => void;
+  subscribeToMessageUpdated: (callback: (event: MessageUpdatedEvent) => void) => () => void;
+  subscribeToMessageDeleted: (callback: (event: MessageDeletedEvent) => void) => () => void;
 }
 
 const XerroWebSocketContext = createContext<XerroWebSocketContextValue | undefined>(undefined);
@@ -68,6 +72,9 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
   const feedItemCreatedCallbacksRef = useRef<Set<(event: FeedItemEvent) => void>>(new Set());
   const feedItemUpdatedCallbacksRef = useRef<Set<(event: FeedItemEvent) => void>>(new Set());
   const feedItemDeletedCallbacksRef = useRef<Set<(event: FeedItemDeletedEvent) => void>>(new Set());
+  const messageCreatedCallbacksRef = useRef<Set<(event: MessageCreatedEvent) => void>>(new Set());
+  const messageUpdatedCallbacksRef = useRef<Set<(event: MessageUpdatedEvent) => void>>(new Set());
+  const messageDeletedCallbacksRef = useRef<Set<(event: MessageDeletedEvent) => void>>(new Set());
 
   // Track last processed bookmark event to prevent duplicate processing
   const lastBookmarkEventTimestampRef = useRef<string>('');
@@ -389,6 +396,34 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
+    // Message events
+    socket.on('messages:message-created', (data: MessageCreatedEvent) => {
+      console.log('[Xerro WebSocket] Message created:', data.message.id);
+      messageCreatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in message created callback:', error);
+        }
+      });
+    });
+
+    socket.on('messages:message-updated', (data: MessageUpdatedEvent) => {
+      console.log('[Xerro WebSocket] Message updated:', data.message.id);
+      messageUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in message updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('messages:message-deleted', (data: MessageDeletedEvent) => {
+      console.log('[Xerro WebSocket] Message deleted:', data.id);
+      messageDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in message deleted callback:', error);
+        }
+      });
+    });
+
     // Cleanup on unmount
     return () => {
       socket.close();
@@ -565,6 +600,21 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     return () => { feedItemDeletedCallbacksRef.current.delete(callback); };
   }, []);
 
+  const subscribeToMessageCreated = useCallback((callback: (event: MessageCreatedEvent) => void) => {
+    messageCreatedCallbacksRef.current.add(callback);
+    return () => { messageCreatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMessageUpdated = useCallback((callback: (event: MessageUpdatedEvent) => void) => {
+    messageUpdatedCallbacksRef.current.add(callback);
+    return () => { messageUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToMessageDeleted = useCallback((callback: (event: MessageDeletedEvent) => void) => {
+    messageDeletedCallbacksRef.current.add(callback);
+    return () => { messageDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
   const value: XerroWebSocketContextValue = {
     isConnected,
     subscribeToAgentStatus,
@@ -594,6 +644,9 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     subscribeToFeedItemCreated,
     subscribeToFeedItemUpdated,
     subscribeToFeedItemDeleted,
+    subscribeToMessageCreated,
+    subscribeToMessageUpdated,
+    subscribeToMessageDeleted,
   };
 
   return (

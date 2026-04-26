@@ -79,7 +79,7 @@ export const navigationConfig: PrimaryNavItem[] = [
     key: 'agent-tasks',
     icon: Bot,
     iconClassName: '[&_svg]:!size-6',
-    label: 'Agent Tasks',
+    label: 'Agents',
     defaultPath: '/agent-tasks/activity',
     secondaryItems: []
   }

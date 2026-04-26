@@ -197,6 +197,7 @@ const Layout = () => {
 
   // Get selected task ID from URL params for Agent Tasks section
   const selectedTaskId = params.id || null;
+  const selectedThreadId = params.threadId || null;
   const isAgentTasksSection = activePrimary === "agent-tasks";
 
   // Home section flag
@@ -219,7 +220,8 @@ const Layout = () => {
   const [currentMemoryFolder, setCurrentMemoryFolder] = useState<string>("");
 
   // Determine current view for Agent Tasks section
-  const getAgentTasksView = (): "history" | "task" | "activity" => {
+  const getAgentTasksView = (): "history" | "task" | "activity" | "messages" => {
+    if (pathname.startsWith("/agent-tasks/messages")) return "messages";
     if (pathname === "/agent-tasks/activity") return "activity";
     if (pathname === "/agent-tasks/history") return "history";
     if (selectedTaskId) return "task";
@@ -332,6 +334,7 @@ const Layout = () => {
         ) : isAgentTasksSection ? (
           <AgentTasksSecondaryNav
             selectedTaskId={selectedTaskId}
+            selectedThreadId={selectedThreadId}
             currentView={agentTasksView}
             onNavigate={handleNavigate}
           />
@@ -407,6 +410,7 @@ const Layout = () => {
               ) : isAgentTasksSection ? (
                 <AgentTasksSecondaryNav
                   selectedTaskId={selectedTaskId}
+                  selectedThreadId={selectedThreadId}
                   currentView={agentTasksView}
                   onNavigate={() => {}}
                 />
@@ -471,6 +475,7 @@ const Layout = () => {
             ) : isAgentTasksSection ? (
               <AgentTasksSecondaryNav
                 selectedTaskId={selectedTaskId}
+                selectedThreadId={selectedThreadId}
                 currentView={agentTasksView}
                 onNavigate={handleNavigate}
                 onTaskSelect={handleMobileNavigate}

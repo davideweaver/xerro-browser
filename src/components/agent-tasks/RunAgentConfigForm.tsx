@@ -228,7 +228,7 @@ export function RunAgentConfigForm({
               <h3 className="text-sm font-medium text-muted-foreground mb-1">
                 Prompt
               </h3>
-              <p className="text-sm whitespace-pre-wrap">{props.prompt}</p>
+              <pre className="text-xs font-mono bg-muted rounded-md px-3 py-2 whitespace-pre-wrap break-words">{props.prompt}</pre>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
