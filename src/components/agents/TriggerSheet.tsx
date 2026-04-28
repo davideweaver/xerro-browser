@@ -243,7 +243,14 @@ export function TriggerSheet({
             </div>
 
             {/* Type */}
-            {!isEditing && (
+            {isEditing ? (
+              <div className="space-y-1.5">
+                <Label>Type</Label>
+                <p className="text-sm capitalize px-3 py-2 rounded-md border bg-muted/40 text-muted-foreground">
+                  {trigger.triggerType === "cron" ? "Schedule (Cron)" : trigger.triggerType.charAt(0).toUpperCase() + trigger.triggerType.slice(1)}
+                </p>
+              </div>
+            ) : (
               <div className="space-y-1.5">
                 <Label>Type</Label>
                 <Select value={triggerType} onValueChange={(v) => handleTypeChange(v as TriggerTypeName)}>
@@ -260,7 +267,14 @@ export function TriggerSheet({
             )}
 
             {/* Variant — shown for document/message */}
-            {!isEditing && triggerType !== "cron" && (
+            {isEditing && trigger.triggerType !== "cron" ? (
+              <div className="space-y-1.5">
+                <Label>Event</Label>
+                <p className="text-sm capitalize px-3 py-2 rounded-md border bg-muted/40 text-muted-foreground">
+                  {VARIANT_OPTIONS[trigger.triggerType].find((o) => o.value === trigger.triggerVariant)?.label ?? trigger.triggerVariant}
+                </p>
+              </div>
+            ) : !isEditing && triggerType !== "cron" ? (
               <div className="space-y-1.5">
                 <Label>Event</Label>
                 <Select value={triggerVariant} onValueChange={setTriggerVariant}>
@@ -276,7 +290,7 @@ export function TriggerSheet({
                   </SelectContent>
                 </Select>
               </div>
-            )}
+            ) : null}
 
             {/* Schedule — shown for cron */}
             {triggerType === "cron" && (
