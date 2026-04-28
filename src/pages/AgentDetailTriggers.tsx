@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 import Container from "@/components/container/Container";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { triggersService } from "@/api/triggersService";
 import { TriggerSheet } from "@/components/agents/TriggerSheet";
-import { Plus, Pencil, Zap } from "lucide-react";
+import { Plus, Pencil, Zap, Loader2 } from "lucide-react";
 import type { TriggerSubscription } from "@/types/triggers";
 
 const TYPE_LABELS: Record<string, string> = {
@@ -59,6 +60,12 @@ export default function AgentDetailTriggers() {
   const handleSaved = () => {
     queryClient.invalidateQueries({ queryKey: ["agent-triggers", agentId] });
   };
+
+  const fireMutation = useMutation({
+    mutationFn: (triggerId: string) => triggersService.fireTrigger(triggerId),
+    onSuccess: () => toast.success("Trigger fired"),
+    onError: (err: Error) => toast.error(err.message),
+  });
 
   return (
     <>
@@ -124,14 +131,30 @@ export default function AgentDetailTriggers() {
                         <p className="text-xs text-muted-foreground truncate">{trigger.description}</p>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="flex-shrink-0 h-8 w-8 p-0"
-                      onClick={(e) => { e.stopPropagation(); handleEdit(trigger); }}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        title="Fire trigger"
+                        disabled={fireMutation.isPending}
+                        onClick={(e) => { e.stopPropagation(); fireMutation.mutate(trigger.id); }}
+                      >
+                        {fireMutation.isPending && fireMutation.variables === trigger.id ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Zap className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={(e) => { e.stopPropagation(); handleEdit(trigger); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

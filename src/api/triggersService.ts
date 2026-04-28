@@ -50,6 +50,10 @@ class TriggersService {
   async getTriggerTypes(): Promise<TriggerTypesResponse> {
     return this.request("/api/v1/triggers/types");
   }
+
+  async fireTrigger(id: string): Promise<{ message: string; subscriptionId: string }> {
+    return this.request(`/api/v1/triggers/${id}/fire`, { method: "POST" });
+  }
 }
 
 export const triggersService = new TriggersService();
