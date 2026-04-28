@@ -15,6 +15,7 @@ interface PrimaryNavProps {
   onNavigate: (path: string) => void;
   footer?: React.ReactNode;
   indicators?: Record<string, React.ReactNode>;
+  leftIndicators?: Record<string, React.ReactNode>;
 }
 
 export function PrimaryNav({
@@ -23,6 +24,7 @@ export function PrimaryNav({
   onNavigate,
   footer,
   indicators = {},
+  leftIndicators = {},
 }: PrimaryNavProps) {
   const isMobile = useIsMobile();
 
@@ -44,6 +46,7 @@ export function PrimaryNav({
           {navigationConfig.map((item) => {
             const isActive = activePrimary === item.key;
             const indicator = indicators[item.key];
+            const leftIndicator = leftIndicators[item.key];
             const button = (
               <div className="relative">
                 <Button
@@ -60,6 +63,9 @@ export function PrimaryNav({
                 </Button>
                 {indicator && (
                   <div className="absolute top-1 right-1">{indicator}</div>
+                )}
+                {leftIndicator && (
+                  <div className="absolute top-1.5 left-1.5">{leftIndicator}</div>
                 )}
               </div>
             );

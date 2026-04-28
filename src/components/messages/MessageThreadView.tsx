@@ -146,7 +146,7 @@ export function MessageThreadView({ threadId }: MessageThreadViewProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendReply();
     }
@@ -187,22 +187,22 @@ export function MessageThreadView({ threadId }: MessageThreadViewProps) {
       </div>
 
       {/* Reply area */}
-      <div className="flex-shrink-0 border-t px-6 py-3">
-        <div className="flex items-end gap-2">
-          <Textarea
-            placeholder="Reply to this thread… (⌘+Enter to send)"
-            className="min-h-[60px] max-h-[120px] resize-none flex-1"
-            value={replyBody}
-            onChange={(e) => setReplyBody(e.target.value)}
-            onKeyDown={handleKeyDown}
-          />
+      <div className="flex-shrink-0 px-4 pb-3 bg-background">
+        <Textarea
+          placeholder="Reply… (Shift+Enter for new line)"
+          className="resize-none bg-transparent border-0 border-t border-t-border rounded-none shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 min-h-[60px] max-h-[120px] placeholder:text-muted-foreground/40"
+          value={replyBody}
+          onChange={(e) => setReplyBody(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <div className="flex justify-end pt-1">
           <Button
-            size="icon"
+            size="sm"
             onClick={handleSendReply}
             disabled={!replyBody.trim() || replyMutation.isPending}
-            className="flex-shrink-0 mb-0.5"
           >
-            <Send className="h-4 w-4" />
+            <Send className="h-4 w-4 mr-2" />
+            Send
           </Button>
         </div>
       </div>

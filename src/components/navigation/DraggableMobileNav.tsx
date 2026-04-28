@@ -17,6 +17,7 @@ interface DraggableMobileNavProps {
   footer?: React.ReactNode;
   secondaryNav?: React.ReactNode;
   indicators?: Record<string, React.ReactNode>;
+  leftIndicators?: Record<string, React.ReactNode>;
 }
 
 export function DraggableMobileNav({
@@ -29,6 +30,7 @@ export function DraggableMobileNav({
   footer,
   secondaryNav,
   indicators = {},
+  leftIndicators = {},
 }: DraggableMobileNavProps) {
   const [translateX, setTranslateX] = useState(-100);
   const [isDragging, setIsDragging] = useState(false);
@@ -211,6 +213,7 @@ export function DraggableMobileNav({
             onNavigate={handlePrimaryNavigate}
             footer={footer}
             indicators={indicators}
+            leftIndicators={leftIndicators}
           />
           {secondaryNav || (
             <SecondaryNav

@@ -23,12 +23,12 @@ class ChatService {
     }
   }
 
-  async createSession(name: string, config?: ChatSessionConfig, groupId?: string): Promise<ChatSession> {
+  async createSession(name: string, config?: ChatSessionConfig, groupId?: string, agentId?: string): Promise<ChatSession> {
     try {
       const response = await apiFetch(`${this.baseUrl}/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, config, ...(groupId ? { groupId } : {}) }),
+        body: JSON.stringify({ name, config, ...(groupId ? { groupId } : {}), ...(agentId ? { agentId } : {}) }),
       });
       if (!response.ok) throw new Error(`Failed to create session: ${response.statusText}`);
       return await response.json();

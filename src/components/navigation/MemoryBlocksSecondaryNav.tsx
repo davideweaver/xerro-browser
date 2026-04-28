@@ -30,14 +30,14 @@ export function MemoryBlocksSecondaryNav({
   const isSessionsActive = pathname.startsWith("/memory/sessions");
   const isRoot = !currentFolder;
 
-  const { data: referenceData, refetch: refetchReference } = useQuery({
+  const { data: referenceData, isLoading: referenceLoading, refetch: refetchReference } = useQuery({
     queryKey: ["memory-blocks-nav", "reference"],
     queryFn: () => memoryBlocksService.listBlocks("reference", 1),
     enabled: isRoot,
   });
 
   // When drilled into a subfolder
-  const { data: subfolderData, refetch: refetchSubfolder } = useQuery({
+  const { data: subfolderData, isLoading: subfolderLoading, refetch: refetchSubfolder } = useQuery({
     queryKey: ["memory-blocks-nav", currentFolder],
     queryFn: () => memoryBlocksService.listBlocks(currentFolder, 1),
     enabled: !isRoot,
@@ -169,8 +169,8 @@ export function MemoryBlocksSecondaryNav({
           </SecondaryNavItem>
         </div>
       </div>
-      <div className="px-6 pb-2">
-        <div className="border-t border-border" />
+      <div className="px-4 pt-3 pb-1">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Blocks</span>
       </div>
 
       {/* Breadcrumbs */}
@@ -221,19 +221,26 @@ export function MemoryBlocksSecondaryNav({
         <div className="space-y-1">
           {isRoot ? (
             <>
-              {/* Reference subfolders */}
-              {referenceData && renderItems(referenceData)}
-            </>
-          ) : (
-            <>
-              {subfolderData ? (
-                renderItems(subfolderData)
-              ) : (
+              {referenceLoading ? (
                 <div className="space-y-1">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <div key={i} className="h-10 bg-accent/50 rounded-lg animate-pulse" />
                   ))}
                 </div>
+              ) : (
+                referenceData && renderItems(referenceData)
+              )}
+            </>
+          ) : (
+            <>
+              {subfolderLoading ? (
+                <div className="space-y-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <div key={i} className="h-10 bg-accent/50 rounded-lg animate-pulse" />
+                  ))}
+                </div>
+              ) : (
+                subfolderData && renderItems(subfolderData)
               )}
             </>
           )}

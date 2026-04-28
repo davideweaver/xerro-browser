@@ -45,3 +45,8 @@ export interface MessageUpdatedEvent {
 export interface MessageDeletedEvent {
   id: string;
 }
+
+export interface ThreadDeletedEvent {
+  threadId: string;
+  unreadCount: number;
+}

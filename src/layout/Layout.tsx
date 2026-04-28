@@ -1,10 +1,13 @@
 import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
+import { useQuery } from "@tanstack/react-query";
 import { useTasksRunning } from "@/hooks/use-tasks-running";
 import { useUnreadNotificationCount } from "@/hooks/use-unread-notification-count";
 import { useDocumentQueryUpdates } from "@/hooks/use-document-query-updates";
 import { useMemoryQueryUpdates } from "@/hooks/use-memory-query-updates";
+import { useAgentQueryUpdates } from "@/hooks/use-agent-query-updates";
 import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
+import { messagesService } from "@/api/messagesService";
 import { WifiOff } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -39,8 +42,14 @@ const Layout = () => {
   const { isConnected: xerroIsConnected } = useXerroWebSocketContext();
   const isTasksRunning = useTasksRunning();
   const { unreadCount } = useUnreadNotificationCount();
+  const { data: messagesUnreadCount = 0 } = useQuery({
+    queryKey: ["messages-unread-count"],
+    queryFn: () => messagesService.getUnreadCount(),
+    refetchInterval: 60_000,
+  });
   useDocumentQueryUpdates();
   useMemoryQueryUpdates();
+  useAgentQueryUpdates();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [currentFolderPath, setCurrentFolderPath] = useState<string>(() =>
     getCurrentFolderPath()
@@ -198,6 +207,7 @@ const Layout = () => {
   // Get selected task ID from URL params for Agent Tasks section
   const selectedTaskId = params.id || null;
   const selectedThreadId = params.threadId || null;
+  const selectedAgentId = params.agentId || null;
   const isAgentTasksSection = activePrimary === "agent-tasks";
 
   // Home section flag
@@ -220,11 +230,12 @@ const Layout = () => {
   const [currentMemoryFolder, setCurrentMemoryFolder] = useState<string>("");
 
   // Determine current view for Agent Tasks section
-  const getAgentTasksView = (): "history" | "task" | "activity" | "messages" => {
+  const getAgentTasksView = (): "history" | "scheduled" | "activity" | "messages" | "agent" => {
     if (pathname.startsWith("/agent-tasks/messages")) return "messages";
     if (pathname === "/agent-tasks/activity") return "activity";
     if (pathname === "/agent-tasks/history") return "history";
-    if (selectedTaskId) return "task";
+    if (pathname.startsWith("/agent-tasks/scheduled") || selectedTaskId) return "scheduled";
+    if (selectedAgentId) return "agent";
     return "history"; // Default
   };
   const agentTasksView = getAgentTasksView();
@@ -281,19 +292,26 @@ const Layout = () => {
     />
   );
 
-  // Indicators for navigation items
+  // Indicators for navigation items (top-right corner)
   const navIndicators = {
-    "agent-tasks": isTasksRunning ? (
-      <div className="relative flex-shrink-0">
-        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-        <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-500 animate-ping opacity-75" />
-      </div>
+    "agent-tasks": messagesUnreadCount > 0 ? (
+      <NotificationBadge count={messagesUnreadCount} size="sm" />
     ) : null,
     "home": unreadCount > 0 ? (
       <NotificationBadge count={unreadCount} size="sm" />
     ) : !xerroIsConnected ? (
       <div className="flex items-center justify-center w-4 h-4 rounded-full bg-red-500">
         <WifiOff className="w-2.5 h-2.5 text-white" />
+      </div>
+    ) : null,
+  };
+
+  // Left-side indicators (top-left corner)
+  const navLeftIndicators = {
+    "agent-tasks": isTasksRunning ? (
+      <div className="relative flex-shrink-0">
+        <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
+        <div className="absolute inset-0 w-2.5 h-2.5 rounded-full bg-green-500 animate-ping opacity-75" />
       </div>
     ) : null,
   };
@@ -309,6 +327,7 @@ const Layout = () => {
           onNavigate={handleNavigate}
           footer={footer}
           indicators={navIndicators}
+          leftIndicators={navLeftIndicators}
         />
 
         {/* Secondary Navigation - 380px */}
@@ -335,6 +354,7 @@ const Layout = () => {
           <AgentTasksSecondaryNav
             selectedTaskId={selectedTaskId}
             selectedThreadId={selectedThreadId}
+            selectedAgentId={selectedAgentId}
             currentView={agentTasksView}
             onNavigate={handleNavigate}
           />
@@ -387,6 +407,7 @@ const Layout = () => {
                 onNavigate={() => {}}
                 footer={footer}
                 indicators={navIndicators}
+          leftIndicators={navLeftIndicators}
               />
               {isDocumentsSection ? (
                 <DocumentsSecondaryNav
@@ -411,6 +432,7 @@ const Layout = () => {
                 <AgentTasksSecondaryNav
                   selectedTaskId={selectedTaskId}
                   selectedThreadId={selectedThreadId}
+                  selectedAgentId={selectedAgentId}
                   currentView={agentTasksView}
                   onNavigate={() => {}}
                 />
@@ -449,6 +471,7 @@ const Layout = () => {
           onNavigate={handleNavigate}
           footer={footer}
           indicators={navIndicators}
+          leftIndicators={navLeftIndicators}
           secondaryNav={
             isDocumentsSection ? (
               <DocumentsSecondaryNav
@@ -476,6 +499,7 @@ const Layout = () => {
               <AgentTasksSecondaryNav
                 selectedTaskId={selectedTaskId}
                 selectedThreadId={selectedThreadId}
+                selectedAgentId={selectedAgentId}
                 currentView={agentTasksView}
                 onNavigate={handleNavigate}
                 onTaskSelect={handleMobileNavigate}

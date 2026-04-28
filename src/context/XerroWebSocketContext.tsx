@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent } from '@/types/websocket';
+import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent, AgentConfigPayload, AgentDeletedPayload, WorkspaceFilePayload, WorkspaceFileMovedPayload, WorkspaceFolderPayload, WorkspaceFolderMovedPayload } from '@/types/websocket';
 import type { NotificationCreatedEvent, NotificationReadEvent, NotificationsReadAllEvent, NotificationDeletedEvent } from '@/types/notifications';
-import type { MessageCreatedEvent, MessageUpdatedEvent, MessageDeletedEvent } from '@/types/messages';
+import type { MessageCreatedEvent, MessageUpdatedEvent, MessageDeletedEvent, ThreadDeletedEvent } from '@/types/messages';
 
 interface XerroWebSocketContextValue {
   isConnected: boolean;
@@ -36,6 +36,17 @@ interface XerroWebSocketContextValue {
   subscribeToMessageCreated: (callback: (event: MessageCreatedEvent) => void) => () => void;
   subscribeToMessageUpdated: (callback: (event: MessageUpdatedEvent) => void) => () => void;
   subscribeToMessageDeleted: (callback: (event: MessageDeletedEvent) => void) => () => void;
+  subscribeToThreadDeleted: (callback: (event: ThreadDeletedEvent) => void) => () => void;
+  subscribeToAgentCreated: (callback: (event: AgentConfigPayload) => void) => () => void;
+  subscribeToAgentUpdated: (callback: (event: AgentConfigPayload) => void) => () => void;
+  subscribeToAgentDeleted: (callback: (event: AgentDeletedPayload) => void) => () => void;
+  subscribeToAgentFileCreated: (callback: (event: WorkspaceFilePayload) => void) => () => void;
+  subscribeToAgentFileUpdated: (callback: (event: WorkspaceFilePayload) => void) => () => void;
+  subscribeToAgentFileDeleted: (callback: (event: WorkspaceFilePayload) => void) => () => void;
+  subscribeToAgentFileMoved: (callback: (event: WorkspaceFileMovedPayload) => void) => () => void;
+  subscribeToAgentFolderCreated: (callback: (event: WorkspaceFolderPayload) => void) => () => void;
+  subscribeToAgentFolderDeleted: (callback: (event: WorkspaceFolderPayload) => void) => () => void;
+  subscribeToAgentFolderMoved: (callback: (event: WorkspaceFolderMovedPayload) => void) => () => void;
 }
 
 const XerroWebSocketContext = createContext<XerroWebSocketContextValue | undefined>(undefined);
@@ -75,6 +86,17 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
   const messageCreatedCallbacksRef = useRef<Set<(event: MessageCreatedEvent) => void>>(new Set());
   const messageUpdatedCallbacksRef = useRef<Set<(event: MessageUpdatedEvent) => void>>(new Set());
   const messageDeletedCallbacksRef = useRef<Set<(event: MessageDeletedEvent) => void>>(new Set());
+  const threadDeletedCallbacksRef = useRef<Set<(event: ThreadDeletedEvent) => void>>(new Set());
+  const agentCreatedCallbacksRef = useRef<Set<(event: AgentConfigPayload) => void>>(new Set());
+  const agentUpdatedCallbacksRef = useRef<Set<(event: AgentConfigPayload) => void>>(new Set());
+  const agentDeletedCallbacksRef = useRef<Set<(event: AgentDeletedPayload) => void>>(new Set());
+  const agentFileCreatedCallbacksRef = useRef<Set<(event: WorkspaceFilePayload) => void>>(new Set());
+  const agentFileUpdatedCallbacksRef = useRef<Set<(event: WorkspaceFilePayload) => void>>(new Set());
+  const agentFileDeletedCallbacksRef = useRef<Set<(event: WorkspaceFilePayload) => void>>(new Set());
+  const agentFileMovedCallbacksRef = useRef<Set<(event: WorkspaceFileMovedPayload) => void>>(new Set());
+  const agentFolderCreatedCallbacksRef = useRef<Set<(event: WorkspaceFolderPayload) => void>>(new Set());
+  const agentFolderDeletedCallbacksRef = useRef<Set<(event: WorkspaceFolderPayload) => void>>(new Set());
+  const agentFolderMovedCallbacksRef = useRef<Set<(event: WorkspaceFolderMovedPayload) => void>>(new Set());
 
   // Track last processed bookmark event to prevent duplicate processing
   const lastBookmarkEventTimestampRef = useRef<string>('');
@@ -424,6 +446,106 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
+    socket.on('messages:thread-deleted', (data: ThreadDeletedEvent) => {
+      console.log('[Xerro WebSocket] Thread deleted:', data.threadId);
+      threadDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in thread deleted callback:', error);
+        }
+      });
+    });
+
+    // Agent events
+    socket.on('agents:agent-created', (data: AgentConfigPayload) => {
+      console.log('[Xerro WebSocket] Agent created:', data.id);
+      agentCreatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent created callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:agent-updated', (data: AgentConfigPayload) => {
+      console.log('[Xerro WebSocket] Agent updated:', data.id);
+      agentUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:agent-deleted', (data: AgentDeletedPayload) => {
+      console.log('[Xerro WebSocket] Agent deleted:', data.id);
+      agentDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent deleted callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:file-created', (data: WorkspaceFilePayload) => {
+      console.log('[Xerro WebSocket] Agent file created:', data.agentId, data.path);
+      agentFileCreatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent file created callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:file-updated', (data: WorkspaceFilePayload) => {
+      console.log('[Xerro WebSocket] Agent file updated:', data.agentId, data.path);
+      agentFileUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent file updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:file-deleted', (data: WorkspaceFilePayload) => {
+      console.log('[Xerro WebSocket] Agent file deleted:', data.agentId, data.path);
+      agentFileDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent file deleted callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:file-moved', (data: WorkspaceFileMovedPayload) => {
+      console.log('[Xerro WebSocket] Agent file moved:', data.agentId, data.oldPath, '->', data.newPath);
+      agentFileMovedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent file moved callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:folder-created', (data: WorkspaceFolderPayload) => {
+      console.log('[Xerro WebSocket] Agent folder created:', data.agentId, data.path);
+      agentFolderCreatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent folder created callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:folder-deleted', (data: WorkspaceFolderPayload) => {
+      console.log('[Xerro WebSocket] Agent folder deleted:', data.agentId, data.path);
+      agentFolderDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent folder deleted callback:', error);
+        }
+      });
+    });
+
+    socket.on('agents:folder-moved', (data: WorkspaceFolderMovedPayload) => {
+      console.log('[Xerro WebSocket] Agent folder moved:', data.agentId, data.oldPath, '->', data.newPath);
+      agentFolderMovedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent folder moved callback:', error);
+        }
+      });
+    });
+
     // Cleanup on unmount
     return () => {
       socket.close();
@@ -615,6 +737,61 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     return () => { messageDeletedCallbacksRef.current.delete(callback); };
   }, []);
 
+  const subscribeToThreadDeleted = useCallback((callback: (event: ThreadDeletedEvent) => void) => {
+    threadDeletedCallbacksRef.current.add(callback);
+    return () => { threadDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentCreated = useCallback((callback: (event: AgentConfigPayload) => void) => {
+    agentCreatedCallbacksRef.current.add(callback);
+    return () => { agentCreatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentUpdated = useCallback((callback: (event: AgentConfigPayload) => void) => {
+    agentUpdatedCallbacksRef.current.add(callback);
+    return () => { agentUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentDeleted = useCallback((callback: (event: AgentDeletedPayload) => void) => {
+    agentDeletedCallbacksRef.current.add(callback);
+    return () => { agentDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFileCreated = useCallback((callback: (event: WorkspaceFilePayload) => void) => {
+    agentFileCreatedCallbacksRef.current.add(callback);
+    return () => { agentFileCreatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFileUpdated = useCallback((callback: (event: WorkspaceFilePayload) => void) => {
+    agentFileUpdatedCallbacksRef.current.add(callback);
+    return () => { agentFileUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFileDeleted = useCallback((callback: (event: WorkspaceFilePayload) => void) => {
+    agentFileDeletedCallbacksRef.current.add(callback);
+    return () => { agentFileDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFileMoved = useCallback((callback: (event: WorkspaceFileMovedPayload) => void) => {
+    agentFileMovedCallbacksRef.current.add(callback);
+    return () => { agentFileMovedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFolderCreated = useCallback((callback: (event: WorkspaceFolderPayload) => void) => {
+    agentFolderCreatedCallbacksRef.current.add(callback);
+    return () => { agentFolderCreatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFolderDeleted = useCallback((callback: (event: WorkspaceFolderPayload) => void) => {
+    agentFolderDeletedCallbacksRef.current.add(callback);
+    return () => { agentFolderDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToAgentFolderMoved = useCallback((callback: (event: WorkspaceFolderMovedPayload) => void) => {
+    agentFolderMovedCallbacksRef.current.add(callback);
+    return () => { agentFolderMovedCallbacksRef.current.delete(callback); };
+  }, []);
+
   const value: XerroWebSocketContextValue = {
     isConnected,
     subscribeToAgentStatus,
@@ -647,6 +824,17 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     subscribeToMessageCreated,
     subscribeToMessageUpdated,
     subscribeToMessageDeleted,
+    subscribeToThreadDeleted,
+    subscribeToAgentCreated,
+    subscribeToAgentUpdated,
+    subscribeToAgentDeleted,
+    subscribeToAgentFileCreated,
+    subscribeToAgentFileUpdated,
+    subscribeToAgentFileDeleted,
+    subscribeToAgentFileMoved,
+    subscribeToAgentFolderCreated,
+    subscribeToAgentFolderDeleted,
+    subscribeToAgentFolderMoved,
   };
 
   return (

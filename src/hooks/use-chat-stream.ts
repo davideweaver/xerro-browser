@@ -5,7 +5,7 @@ import type { ChatSSEEvent } from "@/types/xerroChat";
 interface UseChatStreamOptions {
   onEvent: (event: ChatSSEEvent) => void;
   onPlanReady?: () => void;
-  onComplete: () => void;
+  onComplete: () => void | Promise<void>;
   onError: (error: string) => void;
 }
 
@@ -52,7 +52,7 @@ export function useChatStream(
                   if (event.type === "error") {
                     onError(event.error ?? "Unknown error");
                   } else {
-                    onComplete();
+                    await onComplete();
                   }
                 }
               } catch {
@@ -64,7 +64,7 @@ export function useChatStream(
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           // User cancelled — not an error
-          onComplete();
+          await onComplete();
         } else {
           const msg = error instanceof Error ? error.message : "Stream error";
           onError(msg);

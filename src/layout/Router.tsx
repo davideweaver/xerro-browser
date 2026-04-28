@@ -126,7 +126,31 @@ const Router = createBrowserRouter(
         path="/agent-tasks/history"
         lazy={lazyImportComponent(() => import("@/pages/AgentTaskHistory"))}
       />
-      {/* Messages routes must appear before /:id to prevent "messages" matching as a task ID */}
+      {/* Named routes must appear before /:id to prevent matching as a task ID */}
+      <Route
+        path="/agent-tasks/scheduled"
+        lazy={lazyImportComponent(() => import("@/pages/AgentTasksScheduled"))}
+      />
+      <Route
+        path="/agent-tasks/agents/:agentId/config"
+        lazy={lazyImportComponent(() => import("@/pages/AgentDetailConfig"))}
+      />
+      <Route
+        path="/agent-tasks/agents/:agentId/triggers"
+        lazy={lazyImportComponent(() => import("@/pages/AgentDetailTriggers"))}
+      />
+      <Route
+        path="/agent-tasks/agents/:agentId/history"
+        lazy={lazyImportComponent(() => import("@/pages/AgentDetailHistory"))}
+      />
+      <Route
+        path="/agent-tasks/agents/:agentId/files"
+        lazy={lazyImportComponent(() => import("@/pages/AgentDetailFiles"))}
+      />
+      <Route
+        path="/agent-tasks/agents/:agentId/chat"
+        lazy={lazyImportComponent(() => import("@/pages/AgentDetailChat"))}
+      />
       <Route
         path="/agent-tasks/messages"
         lazy={lazyImportComponent(() => import("@/pages/AgentTaskMessages"))}

@@ -230,6 +230,50 @@ export interface FeedItemDeletedEvent {
   deletedAt: string;
 }
 
+// ============================================================================
+// Agent WebSocket Events
+// ============================================================================
+
+export interface AgentConfigPayload {
+  id: string;
+  name: string;
+  description?: string;
+  workspace: string;
+  enabled: boolean;
+  timestamp: string;
+}
+
+export interface AgentDeletedPayload {
+  id: string;
+  timestamp: string;
+}
+
+export interface WorkspaceFilePayload {
+  agentId: string;
+  path: string;
+  timestamp: string;
+}
+
+export interface WorkspaceFileMovedPayload {
+  agentId: string;
+  oldPath: string;
+  newPath: string;
+  timestamp: string;
+}
+
+export interface WorkspaceFolderPayload {
+  agentId: string;
+  path: string;
+  timestamp: string;
+}
+
+export interface WorkspaceFolderMovedPayload {
+  agentId: string;
+  oldPath: string;
+  newPath: string;
+  timestamp: string;
+}
+
 export interface XerroWebSocketEvents {
   'events:list': (events: string[]) => void;
   'scheduled-tasks:agent-status': (data: AgentStatusEvent) => void;

@@ -67,8 +67,14 @@ interface ExecutionData {
   thinkingDurationMs?: number;
 }
 
-export default function ChatSession() {
-  const { sessionId } = useParams<{ sessionId: string }>();
+interface ChatSessionProps {
+  sessionId?: string;
+  onDelete?: () => void;
+}
+
+export default function ChatSession({ sessionId: sessionIdProp, onDelete }: ChatSessionProps = {}) {
+  const { sessionId: sessionIdParam } = useParams<{ sessionId: string }>();
+  const sessionId = sessionIdProp ?? sessionIdParam;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -122,10 +128,7 @@ export default function ChatSession() {
   });
 
   // Load messages
-  const {
-    data: messagesData,
-    refetch: refetchMessages,
-  } = useQuery({
+  const { data: messagesData } = useQuery({
     queryKey: ["chat-messages", sessionId],
     queryFn: () => chatService.getMessages(sessionId!, 50),
     enabled: !!sessionId,
@@ -507,22 +510,18 @@ export default function ChatSession() {
     thinkingStartMsRef.current = null;
     thinkingDurationMsRef.current = null;
 
-    // Clear raw events immediately (not display-affecting)
     setStreamingEvents([]);
-
-    // Fetch persisted messages BEFORE clearing streaming display state.
-    // This prevents a blank frame where the streaming UI is gone but
-    // persisted messages haven't loaded yet.
-    await refetchMessages();
-
-    setStreamingExecutionId(null);
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
+
+    await queryClient.refetchQueries({ queryKey: ["chat-messages", sessionId] });
+
+    setStreamingExecutionId(null);
 
     queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
     queryClient.invalidateQueries({ queryKey: ["chat-session", sessionId] });
     scrollToBottom();
-  }, [refetchMessages, queryClient, sessionId]);
+  }, [queryClient, sessionId]);
 
   const handlePlanReady = useCallback(() => {
     setPlanReady(true);
@@ -704,7 +703,11 @@ export default function ChatSession() {
       await chatService.deleteSession(sessionId);
       clearDraft(sessionId);
       queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
-      navigate("/chat", { replace: true });
+      if (onDelete) {
+        onDelete();
+      } else {
+        navigate("/chat", { replace: true });
+      }
       toast.success("Session deleted");
     } finally {
       setIsDeleting(false);

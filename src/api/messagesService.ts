@@ -11,6 +11,7 @@ interface SendMessageInput {
   toName: string;
   subject: string;
   body: string;
+  inReplyTo?: string;
 }
 
 class MessagesService {
@@ -18,31 +19,28 @@ class MessagesService {
 
   constructor() {
     this.baseUrl = import.meta.env.VITE_XERRO_API_URL || "";
-    if (!this.baseUrl) {
-      console.warn("VITE_XERRO_API_URL not configured. Messages may not work.");
-    }
   }
 
-  async listInbox(opts?: { limit?: number; offset?: number }): Promise<MessageListResponse> {
+  async listInbox(opts: { limit?: number; offset?: number } = {}): Promise<MessageListResponse> {
     try {
       const params = new URLSearchParams({ view: "inbox" });
-      if (opts?.limit !== undefined) params.append("limit", String(opts.limit));
-      if (opts?.offset !== undefined) params.append("offset", String(opts.offset));
+      if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+      if (opts.offset !== undefined) params.set("offset", String(opts.offset));
       const response = await apiFetch(`${this.baseUrl}/api/v1/messages?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch inbox: ${response.statusText}`);
       return await response.json();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to fetch messages";
+      const message = error instanceof Error ? error.message : "Failed to fetch inbox";
       toast({ title: "Error", description: message, variant: "destructive" });
       throw error;
     }
   }
 
-  async listSent(opts?: { limit?: number; offset?: number }): Promise<MessageListResponse> {
+  async listSent(opts: { limit?: number; offset?: number } = {}): Promise<MessageListResponse> {
     try {
       const params = new URLSearchParams({ view: "sent" });
-      if (opts?.limit !== undefined) params.append("limit", String(opts.limit));
-      if (opts?.offset !== undefined) params.append("offset", String(opts.offset));
+      if (opts.limit !== undefined) params.set("limit", String(opts.limit));
+      if (opts.offset !== undefined) params.set("offset", String(opts.offset));
       const response = await apiFetch(`${this.baseUrl}/api/v1/messages?${params}`);
       if (!response.ok) throw new Error(`Failed to fetch sent: ${response.statusText}`);
       return await response.json();
@@ -138,6 +136,17 @@ class MessagesService {
     }
   }
 
+  async markUnread(id: string): Promise<void> {
+    try {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/messages/${id}/unread`, {
+        method: "PATCH",
+      });
+      if (!response.ok) throw new Error(`Failed to mark as unread: ${response.statusText}`);
+    } catch (error) {
+      console.error("Failed to mark message as unread:", error);
+    }
+  }
+
   async markAllRead(): Promise<void> {
     try {
       const response = await apiFetch(`${this.baseUrl}/api/v1/messages/read-all`, {
@@ -146,6 +155,19 @@ class MessagesService {
       if (!response.ok) throw new Error(`Failed to mark all as read: ${response.statusText}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to mark all as read";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    }
+  }
+
+  async deleteThread(threadId: string): Promise<void> {
+    try {
+      const response = await apiFetch(`${this.baseUrl}/api/v1/messages/threads/${threadId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) throw new Error(`Failed to delete thread: ${response.statusText}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete thread";
       toast({ title: "Error", description: message, variant: "destructive" });
       throw error;
     }
@@ -162,11 +184,6 @@ class MessagesService {
       toast({ title: "Error", description: message, variant: "destructive" });
       throw error;
     }
-  }
-
-  async deleteThread(threadId: string): Promise<void> {
-    const messages = await this.getThread(threadId);
-    await Promise.all(messages.map(m => this.deleteMessage(m.id)));
   }
 
   async getUnreadCount(): Promise<number> {

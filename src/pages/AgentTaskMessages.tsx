@@ -6,7 +6,7 @@ import { ContainerToolButton } from "@/components/container/ContainerToolButton"
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import { MessageThreadView } from "@/components/messages/MessageThreadView";
 import { messagesService } from "@/api/messagesService";
-import { MessagesSquare, X } from "lucide-react";
+import { MailOpen, MessagesSquare, X } from "lucide-react";
 
 export default function AgentTaskMessages() {
   const { threadId } = useParams<{ threadId?: string }>();
@@ -37,6 +37,20 @@ export default function AgentTaskMessages() {
     },
   });
 
+  const handleMarkUnread = () => {
+    const lastAgentMessage = Array.isArray(messages)
+      ? [...messages].reverse().find(m => m.fromId !== "user")
+      : undefined;
+    if (!lastAgentMessage) return;
+    // Navigate first so MessageThreadView unmounts before the WS event arrives,
+    // preventing the auto-mark-as-read effect from re-firing.
+    navigate("/agent-tasks/messages");
+    messagesService.markUnread(lastAgentMessage.id).then(() => {
+      queryClient.invalidateQueries({ queryKey: ["message-threads"] });
+      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+    });
+  };
+
   if (!threadId) {
     return (
       <Container title="Messages" description="Select a conversation from the sidebar">
@@ -58,14 +72,23 @@ export default function AgentTaskMessages() {
         content="fixed"
         bodyHorzPadding={0}
         tools={
-          <ContainerToolButton
-            variant="destructive"
-            size="icon"
-            onClick={() => setDeleteThreadOpen(true)}
-            disabled={deleteThreadMutation.isPending}
-          >
-            <X />
-          </ContainerToolButton>
+          <>
+            <ContainerToolButton
+              size="icon"
+              onClick={handleMarkUnread}
+              title="Mark as unread"
+            >
+              <MailOpen />
+            </ContainerToolButton>
+            <ContainerToolButton
+              variant="destructive"
+              size="icon"
+              onClick={() => setDeleteThreadOpen(true)}
+              disabled={deleteThreadMutation.isPending}
+            >
+              <X />
+            </ContainerToolButton>
+          </>
         }
       >
         <MessageThreadView threadId={threadId} />

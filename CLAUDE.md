@@ -79,6 +79,20 @@ The application also integrates with xerro-service for agent task management:
 
 These are **global** (not scoped by groupId) and configured via `VITE_XERRO_API_URL`.
 
+**Messaging (xerro-service):**
+
+The Agent Tasks section also includes a bidirectional messaging system between the user and agents:
+
+- `messagesService.listThreads()` - List all message threads
+- `messagesService.getThread(threadId)` - Get all messages in a thread
+- `messagesService.sendMessage(input)` - Send a new message
+- `messagesService.replyToMessage(id, body)` - Reply to a message
+- `messagesService.markRead(id)` / `markAllRead()` - Mark messages as read
+- `messagesService.deleteMessage(id)` - Delete a single message
+- `messagesService.deleteThread(threadId)` - Delete an entire thread atomically (uses `DELETE /api/v1/messages/threads/:threadId`)
+
+**Important:** Thread deletion uses a dedicated backend endpoint that deletes all messages in one atomic operation and emits a single `messages:thread-deleted` WebSocket event. Do not use the old client-side batch approach (fetching messages then deleting individually) — that causes intermediate state flickering via per-message SSE events.
+
 ## Design System
 
 This project follows a comprehensive design system documented in `docs/design-system/`.
