@@ -38,6 +38,7 @@ const VARIANT_OPTIONS: Record<TriggerTypeName, { value: string; label: string }[
     { value: "reply", label: "Reply" },
   ],
   cron: [],
+  manual: [],
 };
 
 const OPERATOR_OPTIONS: { value: ConditionOperator; label: string }[] = [
@@ -155,7 +156,7 @@ export function TriggerSheet({
 
   const saveMutation = useMutation({
     mutationFn: () => {
-      const variant = triggerType === "cron" ? "fire" : triggerVariant;
+      const variant = (triggerType === "cron" || triggerType === "manual") ? "fire" : triggerVariant;
       if (isEditing) {
         return triggersService.updateTrigger(trigger.id, {
           name: name.trim(),
@@ -261,20 +262,21 @@ export function TriggerSheet({
                     <SelectItem value="document">Document</SelectItem>
                     <SelectItem value="message">Message</SelectItem>
                     <SelectItem value="cron">Schedule (Cron)</SelectItem>
+                    <SelectItem value="manual">Manual</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
 
-            {/* Variant — shown for document/message */}
-            {isEditing && trigger.triggerType !== "cron" ? (
+            {/* Variant — shown for document/message only */}
+            {isEditing && trigger.triggerType !== "cron" && trigger.triggerType !== "manual" ? (
               <div className="space-y-1.5">
                 <Label>Event</Label>
                 <p className="text-sm capitalize px-3 py-2 rounded-md border bg-muted/40 text-muted-foreground">
                   {VARIANT_OPTIONS[trigger.triggerType].find((o) => o.value === trigger.triggerVariant)?.label ?? trigger.triggerVariant}
                 </p>
               </div>
-            ) : !isEditing && triggerType !== "cron" ? (
+            ) : !isEditing && triggerType !== "cron" && triggerType !== "manual" ? (
               <div className="space-y-1.5">
                 <Label>Event</Label>
                 <Select value={triggerVariant} onValueChange={setTriggerVariant}>

@@ -1,4 +1,4 @@
-export type TriggerTypeName = 'document' | 'message' | 'cron';
+export type TriggerTypeName = 'document' | 'message' | 'cron' | 'manual';
 export type ConditionOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'matches';
 
 export interface TriggerCondition {

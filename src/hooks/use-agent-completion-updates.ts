@@ -16,6 +16,8 @@ import { useXerroWebSocketContext } from '@/context/XerroWebSocketContext';
  * - Task-specific execution history (used by /agent-tasks/:id page)
  * - Task scratchpad
  * - Task traces
+ * - Agent history (used by /agent-tasks/agents/:id/config page)
+ * - Agent config (for last-run timestamp updates)
  */
 export function useAgentCompletionUpdates() {
   const { subscribeToAgentStatus } = useXerroWebSocketContext();
@@ -38,6 +40,10 @@ export function useAgentCompletionUpdates() {
         queryClient.invalidateQueries({ queryKey: ['agent-task-history', event.taskId] });
         queryClient.invalidateQueries({ queryKey: ['agent-task-scratchpad', event.taskId] });
         queryClient.invalidateQueries({ queryKey: ['agent-task-trace', event.taskId] });
+
+        // Invalidate agent history queries (used by /agent-tasks/agents/:id/config page)
+        queryClient.invalidateQueries({ queryKey: ['agent-history'] });
+        queryClient.invalidateQueries({ queryKey: ['agent', event.taskId] });
       }
     });
 

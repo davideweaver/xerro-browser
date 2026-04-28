@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Container from "@/components/container/Container";
@@ -17,6 +17,7 @@ import { formatTimestamp, formatRelativeTime } from "@/lib/cronFormatter";
 import { Play, Power, Loader2, Pencil, Save, X, History, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAgentCompletionUpdates } from "@/hooks/use-agent-completion-updates";
+import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import type { TaskExecution } from "@/types/agentTasks";
 
@@ -33,6 +34,19 @@ export default function AgentDetailConfig() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useAgentCompletionUpdates();
+
+  const { subscribeToAgentStatus } = useXerroWebSocketContext();
+
+  useEffect(() => {
+    if (!agentId) return;
+    return subscribeToAgentStatus((event) => {
+      if (event.taskId !== agentId) return;
+      if (event.status === 'completed' || event.status === 'cancelled' || event.status === 'error') {
+        queryClient.invalidateQueries({ queryKey: ['agent-history', agentId] });
+        queryClient.invalidateQueries({ queryKey: ['agent', agentId] });
+      }
+    });
+  }, [agentId, subscribeToAgentStatus, queryClient]);
 
   const { data: agent, isLoading } = useQuery({
     queryKey: ["agent", agentId],

@@ -17,6 +17,7 @@ const TYPE_LABELS: Record<string, string> = {
   document: "Document",
   message: "Message",
   cron: "Schedule",
+  manual: "Manual",
 };
 
 const VARIANT_LABELS: Record<string, string> = {
@@ -114,7 +115,7 @@ export default function AgentDetailTriggers() {
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{TYPE_LABELS[trigger.triggerType] ?? trigger.triggerType}</span>
-                        {trigger.triggerType !== "cron" && (
+                        {trigger.triggerType !== "cron" && trigger.triggerType !== "manual" && (
                           <>
                             <span>·</span>
                             <span>{VARIANT_LABELS[trigger.triggerVariant] ?? trigger.triggerVariant}</span>
