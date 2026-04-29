@@ -80,7 +80,7 @@ export function CreateTodoDialog({
         setTitle("");
         setBody("");
         setProjectName(defaultProjectName || null);
-        setScheduledDate(undefined);
+        setScheduledDate(new Date());
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCalendarOpen(false);

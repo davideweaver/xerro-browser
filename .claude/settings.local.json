@@ -102,7 +102,12 @@
       "Read(//Users/dweaver/Projects/ai/claude-assist/projects/xerro-service/node_modules/node-pty/build/**)",
       "Read(//Users/dweaver/Projects/ai/claude-assist/projects/xerro-service/**)",
       "Bash(npm rebuild:*)",
-      "mcp__plugin_xerro_xerro__session_search"
+      "mcp__plugin_xerro_xerro__session_search",
+      "Bash(git -C /Users/dweaver/Projects/ai/claude-assist/projects/xerro-browser status)",
+      "Bash(git -C /Users/dweaver/Projects/ai/claude-assist/projects/xerro-browser diff)",
+      "Bash(git -C /Users/dweaver/Projects/ai/claude-assist/projects/xerro-browser log --oneline -5)",
+      "Bash(git -C /Users/dweaver/Projects/ai/claude-assist/projects/xerro-browser add src/components/todos/CreateTodoDialog.tsx src/components/todos/TodoRow.tsx .claude/settings.local.json)",
+      "Bash(git -C /Users/dweaver/Projects/ai/claude-assist/projects/xerro-browser commit -m ' *)"
     ]
   },
   "enableAllProjectMcpServers": true,

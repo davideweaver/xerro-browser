@@ -2,9 +2,19 @@ import { useState, useEffect } from "react";
 import { ExcerptMarkdown } from "@/components/markdown/ExcerptMarkdown";
 import type { Todo } from "@/types/todos";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarDays, X, FolderOpen } from "lucide-react";
+import { CalendarDays, FolderOpen, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addDays, startOfWeek, addWeeks } from "date-fns";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { todosService } from "@/api/todosService";
+import { MobileBottomDrawer, MobileDrawerButton } from "@/components/mobile/MobileBottomDrawer";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -43,6 +53,28 @@ export function TodoRow({
 }: TodoRowProps) {
   const isMobile = useIsMobile();
   const [optimisticCompleted, setOptimisticCompleted] = useState(todo.completed);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const queryClient = useQueryClient();
+
+  const moveMutation = useMutation({
+    mutationFn: (scheduledDate: string) =>
+      todosService.updateTodo(todo.id, { scheduledDate }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
+      queryClient.invalidateQueries({ queryKey: ["todos-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project-todos"] });
+    },
+  });
+
+  const handleMoveToNextDay = () => {
+    const base = todo.scheduledDate ? parseISO(todo.scheduledDate.split("T")[0]) : new Date();
+    moveMutation.mutate(addDays(base, 1).toISOString());
+  };
+
+  const handleMoveToNextWeek = () => {
+    const nextMonday = addWeeks(startOfWeek(new Date(), { weekStartsOn: 1 }), 1);
+    moveMutation.mutate(nextMonday.toISOString());
+  };
 
   // Sync with server state when it changes
   useEffect(() => {
@@ -98,17 +130,105 @@ export function TodoRow({
           )}
         </div>
       </div>
-      {onDelete && (
-        <div onClick={(e) => e.stopPropagation()}>
+      {(onDelete || onOpen) && (
+        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={onDelete}
+            onClick={handleMoveToNextDay}
+            disabled={moveMutation.isPending}
             className={`shrink-0 h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-muted-foreground/30 transition-all ${
               isMobile ? "" : "opacity-0 group-hover:opacity-100"
             }`}
-            title="Delete todo"
+            title="Move to next day"
           >
-            <X className="h-3.5 w-3.5" />
+            <ArrowDown className="h-3.5 w-3.5" />
           </button>
+          {!isMobile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-muted-foreground/30 transition-all opacity-0 group-hover:opacity-100"
+                  title="More options"
+                >
+                  <MoreHorizontal className="h-3.5 w-3.5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {onOpen && (
+                  <DropdownMenuItem onClick={() => onOpen(todo)}>
+                    <PanelRight className="mr-2 h-4 w-4" />
+                    Details
+                  </DropdownMenuItem>
+                )}
+                {onOpen && <DropdownMenuSeparator />}
+                <DropdownMenuItem onClick={handleMoveToNextDay} disabled={moveMutation.isPending}>
+                  <ChevronRight className="mr-2 h-4 w-4" />
+                  Move to next day
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleMoveToNextWeek} disabled={moveMutation.isPending}>
+                  <ChevronsRight className="mr-2 h-4 w-4" />
+                  Move to next week
+                </DropdownMenuItem>
+                {onDelete && <DropdownMenuSeparator />}
+                {onDelete && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <>
+              <button
+                onClick={() => setMenuOpen(true)}
+                className="shrink-0 h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-white hover:bg-muted-foreground/30 transition-all"
+                title="More options"
+              >
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+              <MobileBottomDrawer
+                open={menuOpen}
+                onOpenChange={setMenuOpen}
+                title="Todo Options"
+              >
+                {onOpen && (
+                  <MobileDrawerButton
+                    onClick={() => { setMenuOpen(false); onOpen(todo); }}
+                    icon={<PanelRight className="h-4 w-4" />}
+                  >
+                    Details
+                  </MobileDrawerButton>
+                )}
+                <MobileDrawerButton
+                  onClick={() => { handleMoveToNextDay(); setMenuOpen(false); }}
+                  icon={<ChevronRight className="h-4 w-4" />}
+                >
+                  Move to next day
+                </MobileDrawerButton>
+                <MobileDrawerButton
+                  onClick={() => { handleMoveToNextWeek(); setMenuOpen(false); }}
+                  icon={<ChevronsRight className="h-4 w-4" />}
+                >
+                  Move to next week
+                </MobileDrawerButton>
+                {onDelete && (
+                  <>
+                    <div className="h-px bg-border mx-4 my-1" />
+                    <MobileDrawerButton
+                      onClick={() => { setMenuOpen(false); onDelete(); }}
+                      icon={<Trash2 className="h-4 w-4" />}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      Delete
+                    </MobileDrawerButton>
+                  </>
+                )}
+              </MobileBottomDrawer>
+            </>
+          )}
         </div>
       )}
     </div>
