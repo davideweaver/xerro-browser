@@ -76,6 +76,9 @@ export function RunAgentConfigForm({
   const [notificationMode, setNotificationMode] = useState(
     props.notificationMode ?? true,
   );
+  const [maxDurationMins, setMaxDurationMins] = useState(
+    props.maxDurationMs ? String(props.maxDurationMs / 60000) : "",
+  );
 
   // System prompt state
   type SystemPromptMode = "default" | "plain" | "preset_append";
@@ -164,6 +167,7 @@ export function RunAgentConfigForm({
         ...(disableMemoryContext && { disableMemoryContext }),
         ...(!notificationMode && { notificationMode: false }),
         ...(systemPrompt !== undefined && { systemPrompt }),
+        ...(maxDurationMins.trim() && { maxDurationMs: parseInt(maxDurationMins) * 60000 }),
       };
 
       return agentTasksService.updateTask(task.id, {
@@ -199,6 +203,7 @@ export function RunAgentConfigForm({
     setNotificationMode(props.notificationMode ?? true);
     setSystemPromptMode(deriveSystemPromptMode(props.systemPrompt));
     setSystemPromptText(deriveSystemPromptText(props.systemPrompt));
+    setMaxDurationMins(props.maxDurationMs ? String(props.maxDurationMs / 60000) : "");
     setPromptError("");
     setIsEditing(false);
   };
@@ -238,6 +243,15 @@ export function RunAgentConfigForm({
                 </h3>
                 <p className="text-sm font-mono">
                   {props.cwd || "/Users/dweaver/Projects/ai/xerro-agent"}
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Execution Timeout
+                </h3>
+                <p className="text-sm">
+                  {props.maxDurationMs ? `${props.maxDurationMs / 60000} min` : "Default (10 min)"}
                 </p>
               </div>
 
@@ -480,6 +494,29 @@ export function RunAgentConfigForm({
             />
             <p className="text-xs text-muted-foreground">
               Default: /Users/dweaver/Projects/ai/xerro-agent
+            </p>
+          </div>
+
+          {/* Execution Timeout Field */}
+          <div className="space-y-2">
+            <Label htmlFor="maxDurationMins">Execution Timeout (minutes)</Label>
+            <Input
+              id="maxDurationMins"
+              type="number"
+              min={1}
+              max={120}
+              value={maxDurationMins}
+              onChange={(e) => setMaxDurationMins(e.target.value)}
+              placeholder="Default (10 min)"
+              disabled={updateMutation.isPending}
+            />
+            {maxDurationMins && parseInt(maxDurationMins) > 60 && (
+              <p className="text-xs text-amber-600 dark:text-amber-500">
+                Long timeouts (&gt;60 min) may impact system resources.
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Maximum wall-clock time before the run is forcefully aborted. Leave blank for default (10 min).
             </p>
           </div>
 

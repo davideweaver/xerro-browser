@@ -29,6 +29,7 @@ export default function AgentDetailConfig() {
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editTimeout, setEditTimeout] = useState("");
   const [selectedExecution, setSelectedExecution] = useState<TaskExecution | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -70,6 +71,7 @@ export default function AgentDetailConfig() {
       agentsService.updateAgent(agentId!, {
         name: editName.trim(),
         description: editDescription.trim() || undefined,
+        timeoutMs: editTimeout.trim() ? parseInt(editTimeout) * 60000 : undefined,
       }),
     onSuccess: () => {
       setIsEditing(false);
@@ -107,6 +109,7 @@ export default function AgentDetailConfig() {
   const handleStartEdit = () => {
     setEditName(agent!.name);
     setEditDescription(agent!.description ?? "");
+    setEditTimeout(agent!.timeoutMs ? String(agent!.timeoutMs / 60000) : "");
     setIsEditing(true);
   };
 
@@ -221,6 +224,22 @@ export default function AgentDetailConfig() {
                     placeholder="Optional description"
                   />
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Execution Timeout (minutes)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={editTimeout}
+                    onChange={(e) => setEditTimeout(e.target.value)}
+                    placeholder="Default (10 min)"
+                  />
+                  {editTimeout && parseInt(editTimeout) > 60 && (
+                    <p className="text-xs text-amber-600 dark:text-amber-500">
+                      Long timeouts (&gt;60 min) may impact system resources.
+                    </p>
+                  )}
+                </div>
               </>
             ) : (
               agent.description && (
@@ -239,6 +258,12 @@ export default function AgentDetailConfig() {
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Agent ID</h3>
                 <p className="text-sm font-mono break-all">{agent.id}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">Execution Timeout</h3>
+                <p className="text-sm">
+                  {agent.timeoutMs ? `${agent.timeoutMs / 60000} min` : "Default (10 min)"}
+                </p>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">Created</h3>

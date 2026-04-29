@@ -109,6 +109,11 @@ export interface RunAgentProperties {
    */
   notificationMode?: boolean;
   /**
+   * Maximum wall-clock execution time in milliseconds before the run is forcefully aborted.
+   * Default: undefined (falls back to 10 minutes at execution time)
+   */
+  maxDurationMs?: number;
+  /**
    * Override the system prompt sent to the model.
    * - Plain string: replaces the entire claude_code preset (~27k tokens → near-zero SDK overhead)
    * - Preset object: keeps claude_code preset and appends extra instructions

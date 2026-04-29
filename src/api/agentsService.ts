@@ -11,12 +11,14 @@ export interface CreateAgentInput {
   name: string;
   description?: string;
   workspace?: string;
+  timeoutMs?: number;
 }
 
 export interface UpdateAgentInput {
   name?: string;
   description?: string;
   enabled?: boolean;
+  timeoutMs?: number;
 }
 
 class AgentsService {

@@ -4,6 +4,7 @@ export interface Agent {
   description?: string;
   workspace: string;
   enabled: boolean;
+  timeoutMs?: number;
   createdAt: string;
   updatedAt: string;
   workspaceFiles?: string[];
