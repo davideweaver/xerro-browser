@@ -358,7 +358,7 @@ export function AgentTasksSecondaryNav({
           <>
             <div className="px-6 pb-2">
               <Button variant="ghost" size="sm" className="w-full justify-start"
-                onClick={() => handleNavigation("/agent-tasks/activity")}>
+                onClick={() => onNavigate("/agent-tasks/activity")}>
                 <ChevronLeft className="h-4 w-4 mr-2" />Back
               </Button>
             </div>
@@ -391,7 +391,7 @@ export function AgentTasksSecondaryNav({
           <>
             <div className="px-6 pb-2">
               <Button variant="ghost" size="sm" className="w-full justify-start"
-                onClick={() => handleNavigation("/agent-tasks/activity")}>
+                onClick={() => onNavigate("/agent-tasks/activity")}>
                 <ChevronLeft className="h-4 w-4 mr-2" />Back
               </Button>
             </div>
@@ -446,7 +446,7 @@ export function AgentTasksSecondaryNav({
           <>
             <div className="px-6 pb-2">
               <Button variant="ghost" size="sm" className="w-full justify-start"
-                onClick={() => handleNavigation("/agent-tasks/activity")}>
+                onClick={() => onNavigate("/agent-tasks/activity")}>
                 <ChevronLeft className="h-4 w-4 mr-2" />Back
               </Button>
             </div>
@@ -631,14 +631,14 @@ export function AgentTasksSecondaryNav({
                 </div>
               </SecondaryNavItem>
               <SecondaryNavItem isActive={false}
-                onClick={() => handleNavigation("/agent-tasks/scheduled")}>
+                onClick={() => onNavigate("/agent-tasks/scheduled")}>
                 <div className="flex items-center gap-2 w-full">
                   <CalendarClock className="h-4 w-4 flex-shrink-0" />
                   <SecondaryNavItemTitle className="flex-1">Scheduled</SecondaryNavItemTitle>
                 </div>
               </SecondaryNavItem>
               <SecondaryNavItem isActive={false}
-                onClick={() => handleNavigation("/agent-tasks/messages")}>
+                onClick={() => onNavigate("/agent-tasks/messages")}>
                 <div className="flex items-center gap-2 w-full">
                   <MessagesSquare className="h-4 w-4 flex-shrink-0" />
                   <SecondaryNavItemTitle className="flex-1">Messages</SecondaryNavItemTitle>
@@ -675,7 +675,7 @@ export function AgentTasksSecondaryNav({
                     <SecondaryNavItem
                       key={agent.id}
                       isActive={false}
-                      onClick={() => handleNavigation(`/agent-tasks/agents/${agent.id}/config`)}
+                      onClick={() => onNavigate(`/agent-tasks/agents/${agent.id}/config`)}
                       className={!agent.enabled ? "opacity-50" : ""}
                     >
                       <div className="flex flex-col items-start w-full gap-0.5">
