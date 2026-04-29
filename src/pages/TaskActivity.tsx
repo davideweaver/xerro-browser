@@ -249,6 +249,7 @@ export default function TaskActivity() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedExecution, setSelectedExecution] =
     useState<TaskExecution | null>(null);
+  const [hasReceivedWsEvent, setHasReceivedWsEvent] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [executionToCancel, setExecutionToCancel] = useState<{
     executionId: string;
@@ -262,6 +263,7 @@ export default function TaskActivity() {
 
   // WebSocket connection for real-time updates
   const { isConnected } = useAgentStatus((event: AgentStatusEvent) => {
+    if (!hasReceivedWsEvent) setHasReceivedWsEvent(true);
     setRunningTasks((prev) => {
       const updated = new Map(prev);
 
@@ -390,7 +392,7 @@ export default function TaskActivity() {
   const { data, isLoading } = useQuery({
     queryKey: ["running-tasks"],
     queryFn: () => agentTasksService.getRunningTasks(),
-    refetchInterval: isConnected ? false : 5000, // Only poll when WebSocket disconnected
+    refetchInterval: hasReceivedWsEvent ? false : isConnected ? 2000 : 5000,
     refetchOnMount: true, // Always fetch fresh data on mount
     enabled: true, // Enabled for initial load
   });
@@ -417,16 +419,16 @@ export default function TaskActivity() {
     fetchInitialRunningTasks();
   }, []); // Run once on mount
 
-  // Update running tasks from React Query polling (fallback when WebSocket disconnected)
+  // Update running tasks from React Query polling (before WebSocket delivers first event)
   useEffect(() => {
-    if (data?.running && !isInitialLoad) {
+    if (data?.running && !hasReceivedWsEvent) {
       const updatedTasks = new Map<string, RunningTask>();
       data.running.forEach((task) => {
         updatedTasks.set(task.executionId, task);
       });
       setRunningTasks(updatedTasks);
     }
-  }, [data, isInitialLoad]);
+  }, [data, hasReceivedWsEvent]);
 
   const runningTasksArray = Array.from(runningTasks.values());
 
