@@ -48,6 +48,7 @@ export default function AgentTaskMessages() {
     messagesService.markUnread(lastAgentMessage.id).then(() => {
       queryClient.invalidateQueries({ queryKey: ["message-threads"] });
       queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+      queryClient.invalidateQueries({ queryKey: ["message-thread", threadId] });
     });
   };
 
