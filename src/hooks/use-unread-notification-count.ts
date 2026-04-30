@@ -13,6 +13,7 @@ export function useUnreadNotificationCount() {
     subscribeToNotificationRead,
     subscribeToNotificationUnread,
     subscribeToNotificationsReadAll,
+    subscribeToNotificationDeleted,
   } = useXerroWebSocketContext();
 
   // Query for unread count
@@ -50,11 +51,18 @@ export function useUnreadNotificationCount() {
       });
     });
 
+    const unsubDeleted = subscribeToNotificationDeleted((eventData) => {
+      queryClient.setQueryData(["notifications", "unread-count"], {
+        unreadCount: eventData.unreadCount,
+      });
+    });
+
     return () => {
       unsubCreated();
       unsubRead();
       unsubUnread();
       unsubReadAll();
+      unsubDeleted();
     };
   }, [
     queryClient,
@@ -62,6 +70,7 @@ export function useUnreadNotificationCount() {
     subscribeToNotificationRead,
     subscribeToNotificationUnread,
     subscribeToNotificationsReadAll,
+    subscribeToNotificationDeleted,
   ]);
 
   return {
