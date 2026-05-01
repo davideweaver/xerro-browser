@@ -156,6 +156,10 @@ const Router = createBrowserRouter(
         lazy={lazyImportComponent(() => import("@/pages/AgentDetailChat"))}
       />
       <Route
+        path="/agent-tasks/agents/:agentId/analytics"
+        lazy={lazyImportComponent(() => import("@/pages/AgentDetailAnalytics"))}
+      />
+      <Route
         path="/agent-tasks/messages"
         lazy={lazyImportComponent(() => import("@/pages/AgentTaskMessages"))}
       />

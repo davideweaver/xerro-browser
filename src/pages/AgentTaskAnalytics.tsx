@@ -204,36 +204,44 @@ const WINDOWS: { value: AnalyticsWindow; label: string }[] = [
   { value: "30d", label: "30d" },
 ];
 
-export default function AgentTaskAnalytics() {
+interface AnalyticsDashboardProps {
+  /** When set, locks the dashboard to this agent and hides the agent selector. */
+  lockedAgentId?: string;
+}
+
+export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = {}) {
   const [selectedWindow, setSelectedWindow] = useState<AnalyticsWindow>("24h");
   const [selectedAgentId, setSelectedAgentId] = useState<string>("all");
 
-  const agentId = selectedAgentId === "all" ? undefined : selectedAgentId;
+  const agentId = lockedAgentId ?? (selectedAgentId === "all" ? undefined : selectedAgentId);
+  const showSelector = !lockedAgentId;
 
   const { data: agentsData } = useQuery({
     queryKey: ["analytics-agents"],
     queryFn: () => agentsService.listAgents(),
     staleTime: Infinity,
+    enabled: showSelector,
   });
 
   const { data: tasksData } = useQuery({
     queryKey: ["analytics-scheduled-tasks"],
     queryFn: () => agentTasksService.listTasks(),
     staleTime: Infinity,
+    enabled: showSelector,
   });
 
   const { data: summary, isLoading: summaryLoading } = useQuery({
-    queryKey: ["analytics-summary", selectedWindow, selectedAgentId],
+    queryKey: ["analytics-summary", selectedWindow, agentId ?? "all"],
     queryFn: () => analyticsService.getSummary(selectedWindow, agentId),
   });
 
   const { data: tsRequests, isLoading: tsRequestsLoading } = useQuery({
-    queryKey: ["analytics-ts-requests", selectedWindow, selectedAgentId],
+    queryKey: ["analytics-ts-requests", selectedWindow, agentId ?? "all"],
     queryFn: () => analyticsService.getTimeseries("requests", selectedWindow, agentId),
   });
 
   const { data: tsCost, isLoading: tsCostLoading } = useQuery({
-    queryKey: ["analytics-ts-cost", selectedWindow, selectedAgentId],
+    queryKey: ["analytics-ts-cost", selectedWindow, agentId ?? "all"],
     queryFn: () => analyticsService.getTimeseries("cost", selectedWindow, agentId),
   });
 
@@ -248,24 +256,26 @@ export default function AgentTaskAnalytics() {
     <Container title="Analytics" description="Claude Code agent run metrics">
       {/* Controls */}
       <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All Agents" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Agents</SelectItem>
-            {(agentsData?.agents ?? []).map((agent) => (
-              <SelectItem key={agent.id} value={agent.id}>
-                {agent.name}
-              </SelectItem>
-            ))}
-            {(tasksData?.tasks ?? []).map((task) => (
-              <SelectItem key={task.id} value={task.id}>
-                {task.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showSelector && (
+          <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All Agents" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Agents</SelectItem>
+              {(agentsData?.agents ?? []).map((agent) => (
+                <SelectItem key={agent.id} value={agent.id}>
+                  {agent.name}
+                </SelectItem>
+              ))}
+              {(tasksData?.tasks ?? []).map((task) => (
+                <SelectItem key={task.id} value={task.id}>
+                  {task.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
 
         <div className="flex rounded-md border border-border overflow-hidden">
           {WINDOWS.map((w) => (
@@ -458,4 +468,8 @@ export default function AgentTaskAnalytics() {
       )}
     </Container>
   );
+}
+
+export default function AgentTaskAnalytics() {
+  return <AnalyticsDashboard />;
 }

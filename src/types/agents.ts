@@ -15,7 +15,7 @@ export interface ListAgentsResponse {
   count: number;
 }
 
-export type AgentSection = "config" | "triggers" | "history" | "files" | "chat";
+export type AgentSection = "config" | "triggers" | "history" | "files" | "chat" | "analytics";
 
 export interface WorkspaceFileEntry {
   path: string;

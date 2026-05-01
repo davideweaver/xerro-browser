@@ -76,6 +76,7 @@ const AGENT_SECTIONS: { id: AgentSection; label: string; icon: React.ComponentTy
   { id: "config", label: "Config", icon: Settings },
   { id: "triggers", label: "Triggers", icon: Zap },
   { id: "chat", label: "Chat", icon: MessageSquare },
+  { id: "analytics", label: "Analytics", icon: BarChart2 },
 ];
 
 function getFileNavIcon(name: string) {

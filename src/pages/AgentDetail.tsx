@@ -11,6 +11,7 @@ const sectionLabels: Record<AgentSection, string> = {
   history: "History",
   files: "Files",
   chat: "Chat",
+  analytics: "Analytics",
 };
 
 export default function AgentDetail() {
