@@ -47,6 +47,7 @@ import {
   Check,
   X,
   Settings2,
+  BarChart2,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useTaskConfigUpdates } from "@/hooks/use-task-config-updates";
@@ -64,7 +65,7 @@ interface AgentTasksSecondaryNavProps {
   selectedTaskId: string | null;
   selectedThreadId?: string | null;
   selectedAgentId: string | null;
-  currentView: "history" | "scheduled" | "activity" | "messages" | "agent";
+  currentView: "history" | "scheduled" | "activity" | "messages" | "agent" | "analytics";
   onNavigate: (path: string) => void;
   onTaskSelect?: (path: string) => void;
 }
@@ -647,6 +648,13 @@ export function AgentTasksSecondaryNav({
                       {unreadCount}
                     </span>
                   )}
+                </div>
+              </SecondaryNavItem>
+              <SecondaryNavItem isActive={currentView === "analytics"}
+                onClick={() => handleNavigation("/agent-tasks/analytics")}>
+                <div className="flex items-center gap-2 w-full">
+                  <BarChart2 className="h-4 w-4 flex-shrink-0" />
+                  <SecondaryNavItemTitle className="flex-1">Analytics</SecondaryNavItemTitle>
                 </div>
               </SecondaryNavItem>
             </div>

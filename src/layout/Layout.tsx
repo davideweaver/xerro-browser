@@ -230,10 +230,11 @@ const Layout = () => {
   const [currentMemoryFolder, setCurrentMemoryFolder] = useState<string>("");
 
   // Determine current view for Agent Tasks section
-  const getAgentTasksView = (): "history" | "scheduled" | "activity" | "messages" | "agent" => {
+  const getAgentTasksView = (): "history" | "scheduled" | "activity" | "messages" | "agent" | "analytics" => {
     if (pathname.startsWith("/agent-tasks/messages")) return "messages";
     if (pathname === "/agent-tasks/activity") return "activity";
     if (pathname === "/agent-tasks/history") return "history";
+    if (pathname === "/agent-tasks/analytics") return "analytics";
     if (pathname.startsWith("/agent-tasks/scheduled") || selectedTaskId) return "scheduled";
     if (selectedAgentId) return "agent";
     return "history"; // Default
