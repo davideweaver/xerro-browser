@@ -153,10 +153,10 @@ export function RunAgentConfigForm({
         };
       }
 
-      // Build updated properties
-      const updatedProperties: RunAgentProperties = {
+      // Build updated properties (null values tell the merge-patch backend to delete that key)
+      const updatedProperties = {
         prompt: prompt.trim(),
-        ...(cwd.trim() && { cwd: cwd.trim() }),
+        cwd: cwd.trim() || null,
         permissions,
         ...(additionalDirectories.length > 0 && { additionalDirectories }),
         local,
