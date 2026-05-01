@@ -58,6 +58,9 @@ function formatXAxis(timestamp: number, window: AnalyticsWindow): string {
 }
 
 function parseServerName(server: string): { prefix: string | null; name: string } {
+  if (server === "claudeai") {
+    return { prefix: null, name: "claude.ai" };
+  }
   if (server.startsWith("claude_ai_")) {
     const name = server.slice("claude_ai_".length).replace(/_/g, " ");
     return { prefix: "claude.ai", name };
