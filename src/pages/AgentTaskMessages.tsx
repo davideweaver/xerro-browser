@@ -31,6 +31,7 @@ export default function AgentTaskMessages() {
   const deleteThreadMutation = useMutation({
     mutationFn: () => messagesService.deleteThread(threadId!),
     onSuccess: () => {
+      setDeleteThreadOpen(false);
       queryClient.invalidateQueries({ queryKey: ["message-threads"] });
       queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
       navigate("/agent-tasks/messages");
