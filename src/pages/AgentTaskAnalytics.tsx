@@ -57,6 +57,14 @@ function formatXAxis(timestamp: number, window: AnalyticsWindow): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+function parseServerName(server: string): { prefix: string | null; name: string } {
+  if (server.startsWith("claude_ai_")) {
+    const name = server.slice("claude_ai_".length).replace(/_/g, " ");
+    return { prefix: "claude.ai", name };
+  }
+  return { prefix: null, name: server.replace(/_/g, " ") };
+}
+
 function getErrorColor(pct: number): string {
   if (pct === 0) return "text-muted-foreground";
   if (pct < 1) return "text-yellow-500";
@@ -393,7 +401,19 @@ export default function AgentTaskAnalytics() {
               <TableBody>
                 {mcps.map((m) => (
                   <TableRow key={m.server}>
-                    <TableCell className="font-mono text-sm">{m.server}</TableCell>
+                    <TableCell className="text-sm">
+                      {(() => {
+                        const { prefix, name } = parseServerName(m.server);
+                        return prefix ? (
+                          <span>
+                            <span className="text-muted-foreground">{prefix} </span>
+                            <span className="font-medium">{name}</span>
+                          </span>
+                        ) : (
+                          <span className="font-mono">{name}</span>
+                        );
+                      })()}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">{m.toolCount}</TableCell>
                     <TableCell className="text-right tabular-nums">{m.calls.toLocaleString()}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatLatency(m.avgLatencyMs)}</TableCell>
