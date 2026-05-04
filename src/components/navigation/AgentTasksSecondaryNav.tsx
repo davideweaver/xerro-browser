@@ -30,9 +30,9 @@ import {
   Activity,
   Bot,
   BotOff,
+  MailOpen,
   MessagesSquare,
   Pencil,
-  CheckCheck,
   ChevronLeft,
   CalendarClock,
   Settings,
@@ -99,6 +99,7 @@ export function AgentTasksSecondaryNav({
   const [composeOpen, setComposeOpen] = useState(false);
   const [createAgentOpen, setCreateAgentOpen] = useState(false);
   const [threadToDelete, setThreadToDelete] = useState<string | null>(null);
+  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const { pathname, search: locationSearch } = useLocation();
 
   const [showDisabled, setShowDisabled] = useState<boolean>(() => {
@@ -185,19 +186,14 @@ export function AgentTasksSecondaryNav({
 
   // ── Mutations ──────────────────────────────────────────────────────────────
 
-  const markAllReadMutation = useMutation({
-    mutationFn: () => messagesService.markAllRead(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["message-threads"] });
-      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
-    },
-  });
-
   const deleteThreadMutation = useMutation({
     mutationFn: (threadId: string) => messagesService.deleteThread(threadId),
-    onSuccess: () => {
+    onSuccess: (_data, threadId) => {
       queryClient.invalidateQueries({ queryKey: ["message-threads"] });
       queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
+      if (threadId === selectedThreadId) {
+        handleNavigation("/agent-tasks/messages");
+      }
     },
   });
 
@@ -260,8 +256,8 @@ export function AgentTasksSecondaryNav({
   });
 
   const agents = agentsData?.agents || [];
-  const threads = threadsData?.threads || [];
-  const totalUnread = threads.reduce((sum, t) => sum + t.unreadCount, 0);
+  const allThreads = threadsData?.threads || [];
+  const threads = showUnreadOnly ? allThreads.filter(t => t.unreadCount > 0) : allThreads;
 
   const handleNavigation = (path: string) => {
     if (onTaskSelect) {
@@ -304,11 +300,13 @@ export function AgentTasksSecondaryNav({
 
   const navTools = inMessages ? (
     <>
-      {totalUnread > 0 && (
-        <SecondaryNavToolButton onClick={() => markAllReadMutation.mutate()} title="Mark all read">
-          <CheckCheck size={20} />
-        </SecondaryNavToolButton>
-      )}
+      <SecondaryNavToolToggle
+        pressed={showUnreadOnly}
+        onPressedChange={setShowUnreadOnly}
+        title={showUnreadOnly ? "Show all messages" : "Show unread only"}
+      >
+        <MailOpen size={20} strokeWidth={showUnreadOnly ? 2.5 : 2} />
+      </SecondaryNavToolToggle>
       <SecondaryNavToolButton onClick={() => setComposeOpen(true)} title="Compose message">
         <Pencil size={20} />
       </SecondaryNavToolButton>

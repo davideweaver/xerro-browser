@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent, AgentConfigPayload, AgentDeletedPayload, WorkspaceFilePayload, WorkspaceFileMovedPayload, WorkspaceFolderPayload, WorkspaceFolderMovedPayload } from '@/types/websocket';
+import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent, AgentConfigPayload, AgentDeletedPayload, WorkspaceFilePayload, WorkspaceFileMovedPayload, WorkspaceFolderPayload, WorkspaceFolderMovedPayload, TriggerConfigEvent, TriggerDeletedEvent } from '@/types/websocket';
 import type { NotificationCreatedEvent, NotificationReadEvent, NotificationsReadAllEvent, NotificationDeletedEvent } from '@/types/notifications';
 import type { MessageCreatedEvent, MessageUpdatedEvent, MessageDeletedEvent, ThreadDeletedEvent } from '@/types/messages';
 
@@ -47,6 +47,9 @@ interface XerroWebSocketContextValue {
   subscribeToAgentFolderCreated: (callback: (event: WorkspaceFolderPayload) => void) => () => void;
   subscribeToAgentFolderDeleted: (callback: (event: WorkspaceFolderPayload) => void) => () => void;
   subscribeToAgentFolderMoved: (callback: (event: WorkspaceFolderMovedPayload) => void) => () => void;
+  subscribeToTriggerCreated: (callback: (event: TriggerConfigEvent) => void) => () => void;
+  subscribeToTriggerUpdated: (callback: (event: TriggerConfigEvent) => void) => () => void;
+  subscribeToTriggerDeleted: (callback: (event: TriggerDeletedEvent) => void) => () => void;
 }
 
 const XerroWebSocketContext = createContext<XerroWebSocketContextValue | undefined>(undefined);
@@ -97,6 +100,9 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
   const agentFolderCreatedCallbacksRef = useRef<Set<(event: WorkspaceFolderPayload) => void>>(new Set());
   const agentFolderDeletedCallbacksRef = useRef<Set<(event: WorkspaceFolderPayload) => void>>(new Set());
   const agentFolderMovedCallbacksRef = useRef<Set<(event: WorkspaceFolderMovedPayload) => void>>(new Set());
+  const triggerCreatedCallbacksRef = useRef<Set<(event: TriggerConfigEvent) => void>>(new Set());
+  const triggerUpdatedCallbacksRef = useRef<Set<(event: TriggerConfigEvent) => void>>(new Set());
+  const triggerDeletedCallbacksRef = useRef<Set<(event: TriggerDeletedEvent) => void>>(new Set());
 
   // Track last processed bookmark event to prevent duplicate processing
   const lastBookmarkEventTimestampRef = useRef<string>('');
@@ -546,6 +552,34 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
+    // Trigger events
+    socket.on('triggers:trigger-created', (data: TriggerConfigEvent) => {
+      console.log('[Xerro WebSocket] Trigger created:', data.id);
+      triggerCreatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in trigger created callback:', error);
+        }
+      });
+    });
+
+    socket.on('triggers:trigger-updated', (data: TriggerConfigEvent) => {
+      console.log('[Xerro WebSocket] Trigger updated:', data.id);
+      triggerUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in trigger updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('triggers:trigger-deleted', (data: TriggerDeletedEvent) => {
+      console.log('[Xerro WebSocket] Trigger deleted:', data.id);
+      triggerDeletedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in trigger deleted callback:', error);
+        }
+      });
+    });
+
     // Cleanup on unmount
     return () => {
       socket.close();
@@ -792,6 +826,21 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     return () => { agentFolderMovedCallbacksRef.current.delete(callback); };
   }, []);
 
+  const subscribeToTriggerCreated = useCallback((callback: (event: TriggerConfigEvent) => void) => {
+    triggerCreatedCallbacksRef.current.add(callback);
+    return () => { triggerCreatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToTriggerUpdated = useCallback((callback: (event: TriggerConfigEvent) => void) => {
+    triggerUpdatedCallbacksRef.current.add(callback);
+    return () => { triggerUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToTriggerDeleted = useCallback((callback: (event: TriggerDeletedEvent) => void) => {
+    triggerDeletedCallbacksRef.current.add(callback);
+    return () => { triggerDeletedCallbacksRef.current.delete(callback); };
+  }, []);
+
   const value: XerroWebSocketContextValue = {
     isConnected,
     subscribeToAgentStatus,
@@ -835,6 +884,9 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     subscribeToAgentFolderCreated,
     subscribeToAgentFolderDeleted,
     subscribeToAgentFolderMoved,
+    subscribeToTriggerCreated,
+    subscribeToTriggerUpdated,
+    subscribeToTriggerDeleted,
   };
 
   return (

@@ -7,6 +7,7 @@ import type {
   TodoListFilter,
   TodoListResult,
   TodosProjectsResult,
+  TodosAgentsResult,
 } from "@/types/todos";
 import type { DirectMessageResponse } from "@/types/notifications";
 
@@ -39,6 +40,7 @@ class TodosService {
       if (filter.scheduledBefore)
         params.append("scheduledBefore", filter.scheduledBefore);
       if (filter.search) params.append("search", filter.search);
+      if (filter.agentId) params.append("agentId", filter.agentId);
       if (filter.limit !== undefined)
         params.append("limit", String(filter.limit));
       if (filter.offset !== undefined)
@@ -188,6 +190,30 @@ class TodosService {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Failed to send to Slack";
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+      throw error;
+    }
+  }
+
+  async getAgentIds(completed?: boolean): Promise<TodosAgentsResult> {
+    try {
+      const params = new URLSearchParams();
+      if (completed !== undefined) params.append("completed", String(completed));
+      const qs = params.toString();
+      const response = await apiFetch(`${this.baseUrl}/api/v1/todos/agents${qs ? `?${qs}` : ""}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch agent IDs: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to fetch agent IDs";
       toast({
         title: "Error",
         description: message,

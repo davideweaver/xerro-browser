@@ -17,6 +17,8 @@ import { TodoRow } from "@/components/todos/TodoRow";
 import { TodoEditSheet } from "@/components/todos/TodoEditSheet";
 import { CreateTodoDialog } from "@/components/todos/CreateTodoDialog";
 import { useDeleteTodoConfirmation } from "@/hooks/use-delete-todo-confirmation";
+import { useSendTodoToChat } from "@/hooks/use-send-todo-to-chat";
+import { ComposeMessage } from "@/components/messages/ComposeMessage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,7 +26,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Plus, Check, FolderTree, FolderKanban, ChevronDown, CalendarDays, List } from "lucide-react";
+import { Plus, Check, FolderTree, FolderKanban, Bot, ChevronDown, CalendarDays, List } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -60,6 +62,7 @@ async function fetchTodayTodos(search?: string): Promise<TodoListResult> {
 function buildQueryFilter(filter: string, search?: string): TodoListFilter {
   const result: TodoListFilter = {};
   if (filter.startsWith("project:")) result.projectName = filter.slice(8);
+  if (filter.startsWith("agent:")) result.agentId = filter.slice(6);
   if (search) result.search = search;
   return result;
 }
@@ -68,6 +71,7 @@ function getFilterLabel(filter: string): string {
   if (filter === "today") return "Today";
   if (filter === "all") return "All";
   if (filter.startsWith("project:")) return filter.slice(8);
+  if (filter.startsWith("agent:")) return "Agent";
   return "Todos";
 }
 
@@ -92,6 +96,8 @@ export default function Todos() {
   const [closedProjects, setClosedProjects] = useState<Set<string>>(new Set());
 
   const { confirmDelete, DeleteConfirmationDialog } = useDeleteTodoConfirmation();
+  const sendToChat = useSendTodoToChat();
+  const [composeForTodo, setComposeForTodo] = useState<Todo | null>(null);
 
   const handleToggleCompleted = (val: boolean) => {
     setShowCompleted(val);
@@ -114,6 +120,7 @@ export default function Todos() {
 
   const filter = searchParams.get("filter") || "today";
   const isProjectFilter = filter.startsWith("project:");
+  const isAgentFilter = filter.startsWith("agent:");
   const search = searchParams.get("search") || undefined;
   const queryFilter = buildQueryFilter(filter, search);
   const filterLabel = getFilterLabel(filter);
@@ -132,7 +139,7 @@ export default function Todos() {
 
   /* eslint-disable react-hooks/preserve-manual-memoization */
   const groupedTodos = useMemo(() => {
-    if (!groupByProject || isProjectFilter) return null;
+    if (!groupByProject || isProjectFilter || isAgentFilter) return null;
     return groupTodosByProject(todos);
   }, [todos, groupByProject, isProjectFilter]);
   /* eslint-enable react-hooks/preserve-manual-memoization */
@@ -262,7 +269,7 @@ export default function Todos() {
         <Plus className="mr-1.5" />
         New Todo
       </ContainerToolButton>
-      {!isProjectFilter && (
+      {!isProjectFilter && !isAgentFilter && (
         <ContainerToolToggle
           pressed={groupByProject}
           onPressedChange={handleToggleGroupByProject}
@@ -313,6 +320,7 @@ export default function Todos() {
               const key = project || "__none__";
               const isOpen = !closedProjects.has(key);
               const displayName = project || "No Project";
+              const isAgentGroup = groupTodos.some((t) => !!t.agentId);
               return (
                 <Collapsible
                   key={key}
@@ -324,7 +332,10 @@ export default function Todos() {
                       <ChevronDown
                         className={`h-3.5 w-3.5 transition-transform ${isOpen ? "rotate-0" : "-rotate-90"}`}
                       />
-                      <FolderKanban className="h-3.5 w-3.5" />
+                      {isAgentGroup
+                        ? <Bot className="h-3.5 w-3.5" />
+                        : <FolderKanban className="h-3.5 w-3.5" />
+                      }
                       <span className="text-xs font-semibold uppercase tracking-wider">
                         {displayName}
                       </span>
@@ -345,6 +356,8 @@ export default function Todos() {
                           }
                           onDelete={() => confirmDelete(todo)}
                           onOpen={setEditTodo}
+                          onSendToChat={sendToChat}
+                          onSendToAgent={setComposeForTodo}
                         />
                       ))}
                     </div>
@@ -359,12 +372,14 @@ export default function Todos() {
               <TodoRow
                 key={todo.id}
                 todo={todo}
-                showProject={!isProjectFilter}
+                showProject={!isProjectFilter && !isAgentFilter}
                 onToggle={(id, completed) =>
                   toggleMutation.mutate({ id, completed })
                 }
                 onDelete={() => confirmDelete(todo)}
                 onOpen={setEditTodo}
+                onSendToChat={sendToChat}
+                onSendToAgent={setComposeForTodo}
               />
             ))}
           </div>
@@ -395,6 +410,14 @@ export default function Todos() {
       />
 
       <DeleteConfirmationDialog />
+
+      <ComposeMessage
+        open={!!composeForTodo}
+        onOpenChange={(open) => { if (!open) setComposeForTodo(null); }}
+        defaultToId={composeForTodo?.agentId}
+        defaultSubject={composeForTodo?.title}
+        defaultBody={composeForTodo ? `Please work on this todo: "${composeForTodo.title}"${composeForTodo.body ? `\n\nDetails:\n${composeForTodo.body}` : ""}` : undefined}
+      />
     </>
   );
 }

@@ -5,6 +5,7 @@ export interface Todo {
   documentLink?: string;
   projectName?: string;
   scheduledDate?: string; // ISO datetime string
+  agentId?: string;
   completed: boolean;
   createdAt: string;
   updatedAt: string;
@@ -36,6 +37,7 @@ export interface TodoListFilter {
   scheduledAfter?: string;
   scheduledBefore?: string;
   search?: string;
+  agentId?: string;
   limit?: number;
   offset?: number;
 }
@@ -49,5 +51,15 @@ export interface TodoListResult {
 
 export interface TodosProjectsResult {
   projects: string[];
+  total: number;
+}
+
+export interface TodoAgentEntry {
+  agentId: string;
+  projectName?: string;
+}
+
+export interface TodosAgentsResult {
+  agents: TodoAgentEntry[];
   total: number;
 }

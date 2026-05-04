@@ -49,6 +49,20 @@ function formatCost(usd: number): string {
   return `$${usd.toFixed(4)}`;
 }
 
+function formatK(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return String(n);
+}
+
+function EstLabel() {
+  return (
+    <span className="ml-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+      EST
+    </span>
+  );
+}
+
 function formatXAxis(timestamp: number, window: AnalyticsWindow): string {
   const d = new Date(timestamp);
   if (window === "24h") {
@@ -86,11 +100,14 @@ function getSourceBadgeClass(source: string): string {
 
 // ── Sub-components ───────────────────────────────────────────────────────────
 
-function StatCard({ label, value, valueClass }: { label: string; value: React.ReactNode; valueClass?: string }) {
+function StatCard({ label, value, valueClass, est }: { label: string; value: React.ReactNode; valueClass?: string; est?: boolean }) {
   return (
     <Card>
       <CardContent className="pt-5 pb-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">{label}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-1">
+          {label}
+          {est && <EstLabel />}
+        </p>
         <p className={cn("text-2xl font-bold", valueClass)}>{value}</p>
       </CardContent>
     </Card>
@@ -307,6 +324,7 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
               label="Total Cost"
               value={formatCost(perf.totalCostUsd)}
               valueClass="text-cyan-400"
+              est
             />
             <StatCard
               label="Error Rate"
@@ -349,7 +367,7 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
 
       {/* Tools Table */}
       <div className="mb-6">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+        <h2 className="text-[14px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-3">
           Tools · {selectedWindow.toUpperCase()}
         </h2>
         {summaryLoading ? (
@@ -357,15 +375,15 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
             {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
         ) : (
-          <Card>
+          <div className="border-y border-border/40 overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Tool</TableHead>
-                  <TableHead className="text-right">Calls</TableHead>
-                  <TableHead className="text-right">Avg Latency</TableHead>
-                  <TableHead className="text-right">Max Latency</TableHead>
-                  <TableHead className="text-right">Err %</TableHead>
+                <TableRow className="border-b border-border/40 hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Tool</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Calls</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Avg Latency</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Max Latency</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Err %</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -377,9 +395,9 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
                   </TableRow>
                 ) : (
                   sortedTools.map((t) => (
-                    <TableRow key={t.tool}>
+                    <TableRow key={t.tool} className="border-b border-border/30">
                       <TableCell className="font-mono text-sm">{t.tool}</TableCell>
-                      <TableCell className="text-right tabular-nums">{t.calls.toLocaleString()}</TableCell>
+                      <TableCell className="text-right tabular-nums">{formatK(t.calls)}</TableCell>
                       <TableCell className="text-right tabular-nums">{formatLatency(t.avgMs)}</TableCell>
                       <TableCell className="text-right tabular-nums text-muted-foreground">{formatLatency(t.maxMs)}</TableCell>
                       <TableCell className={cn("text-right tabular-nums font-medium", getErrorColor(t.errorPct))}>
@@ -390,30 +408,30 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
                 )}
               </TableBody>
             </Table>
-          </Card>
+          </div>
         )}
       </div>
 
       {/* MCP Servers Table — hidden if empty */}
       {!summaryLoading && mcps.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          <h2 className="text-[14px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-3">
             MCP Servers · {selectedWindow.toUpperCase()}
           </h2>
-          <Card>
+          <div className="border-y border-border/40 overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Server</TableHead>
-                  <TableHead className="text-right">Tools</TableHead>
-                  <TableHead className="text-right">Calls</TableHead>
-                  <TableHead className="text-right">Avg Latency</TableHead>
-                  <TableHead className="text-right">Err %</TableHead>
+                <TableRow className="border-b border-border/40 hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Server</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Tools</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Calls</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Avg Latency</TableHead>
+                  <TableHead className="text-right text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70 h-9">Err %</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {mcps.map((m) => (
-                  <TableRow key={m.server}>
+                  <TableRow key={m.server} className="border-b border-border/30">
                     <TableCell className="text-sm">
                       {(() => {
                         const { prefix, name } = parseServerName(m.server);
@@ -428,7 +446,7 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
                       })()}
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{m.toolCount}</TableCell>
-                    <TableCell className="text-right tabular-nums">{m.calls.toLocaleString()}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatK(m.calls)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatLatency(m.avgLatencyMs)}</TableCell>
                     <TableCell className={cn("text-right tabular-nums font-medium", getErrorColor(m.errorPct))}>
                       {m.errorPct.toFixed(1)}%
@@ -437,14 +455,14 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
                 ))}
               </TableBody>
             </Table>
-          </Card>
+          </div>
         </div>
       )}
 
       {/* Skills — badge chips, hidden if empty */}
       {!summaryLoading && skills.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          <h2 className="text-[14px] font-semibold uppercase tracking-widest text-muted-foreground/70 mb-3">
             Skills · {selectedWindow.toUpperCase()}
           </h2>
           <div className="flex flex-wrap gap-2">

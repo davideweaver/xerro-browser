@@ -551,13 +551,21 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete }: Chat
   const handleCancel = useCallback(() => {
     if (isReconnecting) {
       reconnectControllerRef.current?.abort();
-      chatService.cancelMessage(sessionId!).catch(() => {});
       setIsReconnecting(false);
       setStreamingSessionId(null);
     } else {
       cancelStream();
     }
-  }, [isReconnecting, cancelStream, sessionId]);
+    // Always call the backend cancel API so the execution is aborted immediately
+    // rather than waiting for the server's 10s reconnect grace period to expire.
+    // After success, refetch messages — the server needs a moment to write the
+    // cancelled assistant message before the refetch from handleComplete() fires.
+    chatService.cancelMessage(sessionId!).then(() => {
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
+      }, 800);
+    }).catch(() => {});
+  }, [isReconnecting, cancelStream, sessionId, queryClient]);
 
   // True when streaming (POST) or reconnected stream is active for this session
   const isActiveSession = (isStreaming || isReconnecting) && streamingSessionId === sessionId;

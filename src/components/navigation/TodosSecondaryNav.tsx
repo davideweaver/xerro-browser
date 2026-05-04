@@ -2,11 +2,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { todosService } from "@/api/todosService";
+import { agentsService } from "@/api/agentsService";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { SecondaryNavItemTitle } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavSearch } from "@/components/navigation/SecondaryNavSearch";
-import { CalendarDays, List, Folder } from "lucide-react";
+import { CalendarDays, List, Folder, Bot } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 interface TodosSecondaryNavProps {
@@ -30,7 +31,35 @@ export function TodosSecondaryNav({
     queryFn: () => todosService.getProjects(false),
   });
 
-  const projects = projectsData?.projects || [];
+  const { data: agentIdsData } = useQuery({
+    queryKey: ["todos-agents", false],
+    queryFn: () => todosService.getAgentIds(false),
+  });
+
+  const { data: agentsData } = useQuery({
+    queryKey: ["agents"],
+    queryFn: () => agentsService.listAgents(),
+    enabled: (agentIdsData?.agents.length ?? 0) > 0,
+  });
+
+  const agentEntries = agentIdsData?.agents || [];
+
+  // Project names that belong to agents — exclude them from the PROJECTS list
+  const agentProjectNames = new Set(
+    agentEntries.map((e) => e.projectName).filter(Boolean) as string[]
+  );
+
+  const projects = (projectsData?.projects || []).filter(
+    (p) => !agentProjectNames.has(p)
+  );
+
+  const agentItems = agentEntries.map((entry) => {
+    const agent = agentsData?.agents.find((a) => a.id === entry.agentId);
+    return {
+      agentId: entry.agentId,
+      name: agent?.name ?? entry.projectName ?? entry.agentId.slice(0, 8),
+    };
+  });
 
   const buildPath = (filter: string, search?: string) => {
     const params = new URLSearchParams();
@@ -131,6 +160,36 @@ export function TodosSecondaryNav({
           </div>
         )}
       </div>
+
+      {/* Agents Section */}
+      {agentItems.length > 0 && (
+        <div className="px-4 pb-4">
+          <div className="px-3 py-2">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Agents
+            </span>
+          </div>
+          <div className="space-y-1">
+            {agentItems.map(({ agentId, name }) => {
+              const filterKey = `agent:${agentId}`;
+              return (
+                <SecondaryNavItem
+                  key={agentId}
+                  isActive={currentFilter === filterKey}
+                  onClick={() => handleNavigate(filterKey)}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <Bot className="h-4 w-4 flex-shrink-0" />
+                    <SecondaryNavItemTitle className="truncate">
+                      {name}
+                    </SecondaryNavItemTitle>
+                  </div>
+                </SecondaryNavItem>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </SecondaryNavContainer>
   );
 }

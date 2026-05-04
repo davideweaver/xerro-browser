@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { triggersService } from "@/api/triggersService";
 import { TriggerSheet } from "@/components/agents/TriggerSheet";
+import { useTriggerUpdates } from "@/hooks/use-trigger-updates";
 import { Plus, Pencil, Zap, Loader2 } from "lucide-react";
 import type { TriggerSubscription } from "@/types/triggers";
 
@@ -33,6 +34,7 @@ const VARIANT_LABELS: Record<string, string> = {
 export default function AgentDetailTriggers() {
   const { agentId } = useParams<{ agentId: string }>();
   const queryClient = useQueryClient();
+  useTriggerUpdates();
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedTrigger, setSelectedTrigger] = useState<TriggerSubscription | null>(null);

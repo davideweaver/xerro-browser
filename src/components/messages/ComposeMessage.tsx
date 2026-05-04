@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BaseDialog } from "@/components/BaseDialog";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { agentTasksService } from "@/api/agentTasksService";
+import { agentsService } from "@/api/agentsService";
 import { messagesService } from "@/api/messagesService";
 import { useNavigate } from "react-router-dom";
 
@@ -21,23 +21,43 @@ interface ComposeMessageProps {
   onOpenChange: (open: boolean) => void;
   defaultToId?: string;
   defaultToName?: string;
+  defaultSubject?: string;
+  defaultBody?: string;
 }
 
-export function ComposeMessage({ open, onOpenChange, defaultToId, defaultToName }: ComposeMessageProps) {
+export function ComposeMessage({ open, onOpenChange, defaultToId, defaultToName, defaultSubject, defaultBody }: ComposeMessageProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [toId, setToId] = useState(defaultToId || "");
   const [toName, setToName] = useState(defaultToName || "");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [subject, setSubject] = useState(defaultSubject || "");
+  const [body, setBody] = useState(defaultBody || "");
 
-  const { data: tasksData } = useQuery({
-    queryKey: ["agent-tasks-for-compose"],
-    queryFn: () => agentTasksService.listTasks(true),
+  const { data: agentsData } = useQuery({
+    queryKey: ["agents-for-compose"],
+    queryFn: () => agentsService.listAgents(),
     enabled: open,
   });
 
-  const tasks = tasksData?.tasks || [];
+  const tasks = (agentsData?.agents || []).filter((a) => a.enabled);
+
+  // Reset form when dialog opens with new defaults
+  useEffect(() => {
+    if (open) {
+      setToId(defaultToId || "");
+      setToName(defaultToName || "");
+      setSubject(defaultSubject || "");
+      setBody(defaultBody || "");
+    }
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-resolve agent name once the agent list loads
+  useEffect(() => {
+    if (defaultToId && tasks.length > 0 && !toName) {
+      const task = tasks.find((t) => t.id === defaultToId);
+      if (task) setToName(task.name);
+    }
+  }, [tasks, defaultToId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sendMutation = useMutation({
     mutationFn: () =>
@@ -48,8 +68,8 @@ export function ComposeMessage({ open, onOpenChange, defaultToId, defaultToName 
       onOpenChange(false);
       setToId(defaultToId || "");
       setToName(defaultToName || "");
-      setSubject("");
-      setBody("");
+      setSubject(defaultSubject || "");
+      setBody(defaultBody || "");
       navigate(`/agent-tasks/messages/${message.threadId}`);
     },
   });

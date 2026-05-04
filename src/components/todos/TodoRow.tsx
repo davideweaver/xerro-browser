@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ExcerptMarkdown } from "@/components/markdown/ExcerptMarkdown";
 import type { Todo } from "@/types/todos";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarDays, FolderOpen, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2 } from "lucide-react";
+import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquarePlus } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parseISO, addDays, startOfWeek, addWeeks } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -41,6 +41,8 @@ interface TodoRowProps {
   onToggle: (id: string, completed: boolean) => void;
   onDelete?: () => void;
   onOpen?: (todo: Todo) => void;
+  onSendToChat?: (todo: Todo) => void;
+  onSendToAgent?: (todo: Todo) => void;
   showProject?: boolean;
 }
 
@@ -49,6 +51,8 @@ export function TodoRow({
   onToggle,
   onDelete,
   onOpen,
+  onSendToChat,
+  onSendToAgent,
   showProject = false,
 }: TodoRowProps) {
   const isMobile = useIsMobile();
@@ -118,7 +122,10 @@ export function TodoRow({
         <div className="flex flex-wrap items-center gap-3 mt-1">
           {showProject && todo.projectName && (
             <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <FolderOpen className="h-3.5 w-3.5" />
+              {todo.agentId
+                ? <Bot className="h-3.5 w-3.5" />
+                : <FolderOpen className="h-3.5 w-3.5" />
+              }
               {todo.projectName}
             </span>
           )}
@@ -160,6 +167,19 @@ export function TodoRow({
                   </DropdownMenuItem>
                 )}
                 {onOpen && <DropdownMenuSeparator />}
+                {onSendToChat && (
+                  <DropdownMenuItem onClick={() => onSendToChat(todo)}>
+                    <MessageSquarePlus className="mr-2 h-4 w-4" />
+                    Send to Chat
+                  </DropdownMenuItem>
+                )}
+                {onSendToAgent && todo.agentId && (
+                  <DropdownMenuItem onClick={() => onSendToAgent(todo)}>
+                    <Bot className="mr-2 h-4 w-4" />
+                    Send to Agent
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleMoveToNextDay} disabled={moveMutation.isPending}>
                   <ChevronRight className="mr-2 h-4 w-4" />
                   Move to next day
@@ -202,6 +222,24 @@ export function TodoRow({
                     Details
                   </MobileDrawerButton>
                 )}
+                {onOpen && <div className="h-px bg-border mx-4 my-1" />}
+                {onSendToChat && (
+                  <MobileDrawerButton
+                    onClick={() => { setMenuOpen(false); onSendToChat(todo); }}
+                    icon={<MessageSquarePlus className="h-4 w-4" />}
+                  >
+                    Send to Chat
+                  </MobileDrawerButton>
+                )}
+                {onSendToAgent && todo.agentId && (
+                  <MobileDrawerButton
+                    onClick={() => { setMenuOpen(false); onSendToAgent(todo); }}
+                    icon={<Bot className="h-4 w-4" />}
+                  >
+                    Send to Agent
+                  </MobileDrawerButton>
+                )}
+                <div className="h-px bg-border mx-4 my-1" />
                 <MobileDrawerButton
                   onClick={() => { handleMoveToNextDay(); setMenuOpen(false); }}
                   icon={<ChevronRight className="h-4 w-4" />}

@@ -15,7 +15,7 @@ import { SidePanelHeader } from "@/components/shared/SidePanelHeader";
 import { formatScheduledDate } from "@/components/todos/TodoRow";
 import { todosService } from "@/api/todosService";
 import {
-  CalendarDays, Check, Loader2, FolderOpen,
+  CalendarDays, Check, Loader2, FolderOpen, Bot,
   Bold, Italic, Underline as UnderlineIcon,
   List, ListOrdered, ListChecks, Code2,
   Undo2, Redo2, ClipboardPaste,
@@ -388,7 +388,10 @@ export function TodoEditSheet({ todo, onClose, onSave, onOpenEditDialog }: TodoE
                           <>
                             {todo.scheduledDate && <span className="text-zinc-600">•</span>}
                             <span className="flex items-center gap-1">
-                              <FolderOpen className="h-3.5 w-3.5" />
+                              {todo.agentId
+                                ? <Bot className="h-3.5 w-3.5" />
+                                : <FolderOpen className="h-3.5 w-3.5" />
+                              }
                               {todo.projectName}
                             </span>
                           </>

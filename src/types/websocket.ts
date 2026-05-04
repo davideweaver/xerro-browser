@@ -186,6 +186,20 @@ export interface TaskConfigEvent {
   timestamp: string;
 }
 
+export interface TriggerConfigEvent {
+  id: string;
+  name: string;
+  triggerType: string;
+  triggerVariant: string;
+  enabled: boolean;
+  timestamp: string;
+}
+
+export interface TriggerDeletedEvent {
+  id: string;
+  timestamp: string;
+}
+
 export interface TodoChangeEvent {
   id: string;
   timestamp: string;
@@ -280,6 +294,9 @@ export interface XerroWebSocketEvents {
   'scheduled-tasks:task-created': (data: TaskConfigEvent) => void;
   'scheduled-tasks:task-updated': (data: TaskConfigEvent) => void;
   'scheduled-tasks:task-deleted': (data: TaskConfigEvent) => void;
+  'triggers:trigger-created': (data: TriggerConfigEvent) => void;
+  'triggers:trigger-updated': (data: TriggerConfigEvent) => void;
+  'triggers:trigger-deleted': (data: TriggerDeletedEvent) => void;
   'documents:document-added': (data: DocumentChangeEvent) => void;
   'documents:document-updated': (data: DocumentChangeEvent) => void;
   'documents:document-removed': (data: DocumentChangeEvent) => void;
