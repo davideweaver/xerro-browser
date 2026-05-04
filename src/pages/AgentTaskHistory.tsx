@@ -58,7 +58,7 @@ export default function AgentTaskHistory() {
 
   if (isLoading) {
     return (
-      <Container title="Task History" description="Loading task execution history...">
+      <Container title="History" description="Loading task execution history...">
         <div className="space-y-2">
           {Array.from({ length: 10 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full" />
@@ -70,7 +70,7 @@ export default function AgentTaskHistory() {
 
   return (
     <Container
-      title="Task History"
+      title="History"
       description="Recent task executions across all agent tasks"
       tools={
         <ContainerToolButton

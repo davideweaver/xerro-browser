@@ -508,7 +508,7 @@ export default function TaskActivity() {
   if (isLoading && isInitialLoad) {
     return (
       <Container
-        title="Task Activity"
+        title="Activity"
         description="Real-time monitoring of executing tasks"
       >
         <div className="space-y-3">
@@ -522,7 +522,7 @@ export default function TaskActivity() {
 
   return (
     <Container
-      title="Task Activity"
+      title="Activity"
       description="Real-time monitoring of executing tasks"
       tools={
         <div className="flex items-center gap-2">
