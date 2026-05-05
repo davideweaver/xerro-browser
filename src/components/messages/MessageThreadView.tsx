@@ -83,6 +83,8 @@ export function MessageThreadView({ threadId }: MessageThreadViewProps) {
     queryKey: ["message-thread", threadId],
     queryFn: () => messagesService.getThread(threadId),
     enabled: !!threadId,
+    staleTime: 0,
+    refetchInterval: 8000,
   });
 
   // Auto-mark unread messages as read when thread opens
@@ -100,12 +102,12 @@ export function MessageThreadView({ threadId }: MessageThreadViewProps) {
   // Real-time updates for this thread
   useEffect(() => {
     const unsub1 = subscribeToMessageCreated((event) => {
-      if (event.message.threadId === threadId) {
+      if (event.message?.threadId === threadId) {
         queryClient.invalidateQueries({ queryKey: ["message-thread", threadId] });
       }
     });
     const unsub2 = subscribeToMessageUpdated((event) => {
-      if (event.message.threadId === threadId) {
+      if (event.message?.threadId === threadId) {
         queryClient.invalidateQueries({ queryKey: ["message-thread", threadId] });
       }
     });

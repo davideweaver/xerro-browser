@@ -435,7 +435,7 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     });
 
     socket.on('messages:message-updated', (data: MessageUpdatedEvent) => {
-      console.log('[Xerro WebSocket] Message updated:', data.message.id);
+      console.log('[Xerro WebSocket] Message updated:', data.message?.id ?? '(bulk)');
       messageUpdatedCallbacksRef.current.forEach(callback => {
         try { callback(data); } catch (error) {
           console.error('[Xerro WebSocket] Error in message updated callback:', error);
