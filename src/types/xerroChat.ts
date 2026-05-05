@@ -2,6 +2,7 @@ export interface ChatSession {
   id: string;
   name: string;
   groupId?: string;
+  agentId?: string;
   config: ChatSessionConfig;
   createdAt: string;
   updatedAt: string;

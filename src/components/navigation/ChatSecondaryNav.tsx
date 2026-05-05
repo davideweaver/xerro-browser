@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { chatService } from "@/api/chatService";
 import type { ChatGroup } from "@/types/xerroChat";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
@@ -10,6 +10,7 @@ import {
 } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { SecondaryNavSearch } from "@/components/navigation/SecondaryNavSearch";
 import { NewChatDialog } from "@/components/chat-sessions/NewChatDialog";
@@ -18,8 +19,14 @@ import { DeleteGroupDialog } from "@/components/chat-sessions/DeleteGroupDialog"
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import {
   Plus, MessageSquare, Search, X,
-  Folder, FolderPlus, MoreHorizontal, ChevronLeft, Pencil, Trash2, SquareTerminal,
+  Folder, FolderPlus, MoreHorizontal, MoreVertical, ChevronLeft, Pencil, Trash2, SquareTerminal,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useActiveTerminalSessions } from "@/lib/terminalSessions";
 import { formatDistanceToNow } from "date-fns";
 
@@ -48,7 +55,6 @@ export function ChatSecondaryNav({
   onSessionSelect,
 }: ChatSecondaryNavProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const queryClient = useQueryClient();
 
   const [storedNavState] = useState(loadNavState);
@@ -56,6 +62,11 @@ export function ChatSecondaryNav({
   const [activeGroup, setActiveGroup] = useState<ChatGroup | null>(null);
   const [groupParentView, setGroupParentView] = useState<NavView>(storedNavState.groupParentView);
   const [groupSearch, setGroupSearch] = useState("");
+
+  const [chatMode, setChatMode] = useState<"projects" | "agents">(() => {
+    const stored = localStorage.getItem("chat-nav-mode");
+    return stored === "agents" ? "agents" : "projects";
+  });
 
   const [newChatOpen, setNewChatOpen] = useState(false);
   const [newGroupOpen, setNewGroupOpen] = useState(false);
@@ -132,7 +143,10 @@ export function ChatSecondaryNav({
   const recentGroups = allGroups.slice(0, RECENT_GROUPS_LIMIT);
   const hasMoreGroups = allGroups.length > RECENT_GROUPS_LIMIT;
   const sessions = sessionsData?.sessions ?? [];
-  const ungroupedSessions = sessions.filter((s) => !s.groupId);
+  const filteredSessions = chatMode === "agents"
+    ? sessions.filter((s) => !!s.agentId)
+    : sessions.filter((s) => !s.agentId);
+  const ungroupedSessions = filteredSessions.filter((s) => !s.groupId);
   const groupSessions = groupSessionsData?.sessions ?? [];
 
   const sessionToDelete = (view === "group-sessions" ? groupSessions : sessions)
@@ -264,21 +278,50 @@ export function ChatSecondaryNav({
         title="Chat"
         tools={
           <>
-            <SecondaryNavToolButton onClick={() => setNewChatOpen(true)} title="New chat">
+            <ToggleGroup
+              type="single"
+              value={chatMode}
+              onValueChange={(value) => {
+                if (value) {
+                  const mode = value as "projects" | "agents";
+                  setChatMode(mode);
+                  localStorage.setItem("chat-nav-mode", mode);
+                }
+              }}
+              size="sm"
+            >
+              <ToggleGroupItem value="projects" aria-label="Show project chats">
+                Projects
+              </ToggleGroupItem>
+              <ToggleGroupItem value="agents" aria-label="Show agent chats">
+                Agents
+              </ToggleGroupItem>
+            </ToggleGroup>
+            <SecondaryNavToolButton
+              onClick={() => setNewChatOpen(true)}
+              title={chatMode === "agents" ? "New agent chat" : "New chat"}
+            >
               <Plus size={20} />
             </SecondaryNavToolButton>
-            {view !== "group-sessions" && (
-              <SecondaryNavToolButton onClick={() => setNewGroupOpen(true)} title="New group">
-                <FolderPlus size={18} />
-              </SecondaryNavToolButton>
-            )}
-            <SecondaryNavToolButton
-              onClick={() => handleNavigation("/chat/search")}
-              title="Search chats"
-              className={location.pathname === "/chat/search" ? "bg-accent text-accent-foreground" : ""}
-            >
-              <Search size={22} />
-            </SecondaryNavToolButton>
+            <DropdownMenu modal={false}>
+              <DropdownMenuTrigger asChild>
+                <SecondaryNavToolButton aria-label="More options">
+                  <MoreVertical size={20} />
+                </SecondaryNavToolButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                {chatMode === "projects" && view !== "group-sessions" && (
+                  <DropdownMenuItem onClick={() => setNewGroupOpen(true)}>
+                    <FolderPlus className="h-4 w-4 mr-2" />
+                    Add Folder
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={() => handleNavigation("/chat/search")}>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </>
         }
       >
@@ -347,9 +390,9 @@ export function ChatSecondaryNav({
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  {recentGroups.map(renderGroupItem)}
+                  {chatMode === "projects" && recentGroups.map(renderGroupItem)}
 
-                  {hasMoreGroups && (
+                  {chatMode === "projects" && hasMoreGroups && (
                     <button
                       onClick={() => setView("all-groups")}
                       className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/50 rounded-md transition-colors"
@@ -359,13 +402,13 @@ export function ChatSecondaryNav({
                     </button>
                   )}
 
-                  {allGroups.length > 0 && ungroupedSessions.length > 0 && (
+                  {chatMode === "projects" && allGroups.length > 0 && ungroupedSessions.length > 0 && (
                     <div className="h-px bg-border/50 my-2" />
                   )}
 
                   {ungroupedSessions.map(renderSessionItem)}
 
-                  {sessions.length === 0 && allGroups.length === 0 && (
+                  {filteredSessions.length === 0 && (chatMode === "agents" || allGroups.length === 0) && (
                     <div className="text-sm text-muted-foreground text-center py-8">
                       No sessions yet.
                       <button
@@ -434,6 +477,7 @@ export function ChatSecondaryNav({
         onOpenChange={setNewChatOpen}
         onCreated={handleSessionCreated}
         initialGroupId={view === "group-sessions" ? activeGroup?.id : undefined}
+        agentMode={chatMode === "agents"}
       />
 
       <NewGroupDialog

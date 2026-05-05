@@ -70,9 +70,11 @@ interface ExecutionData {
 interface ChatSessionProps {
   sessionId?: string;
   onDelete?: () => void;
+  title?: string;
+  description?: string;
 }
 
-export default function ChatSession({ sessionId: sessionIdProp, onDelete }: ChatSessionProps = {}) {
+export default function ChatSession({ sessionId: sessionIdProp, onDelete, title: titleProp, description: descriptionProp }: ChatSessionProps = {}) {
   const { sessionId: sessionIdParam } = useParams<{ sessionId: string }>();
   const sessionId = sessionIdProp ?? sessionIdParam;
   const navigate = useNavigate();
@@ -737,8 +739,8 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete }: Chat
   return (
     <>
       <Container
-        title={session?.name ?? "Chat"}
-        description={sessionLabel}
+        title={titleProp ?? session?.name ?? "Chat"}
+        description={descriptionProp ?? sessionLabel}
         bodyHorzPadding={0}
         content={isMobile ? undefined : "fixed"}
       >

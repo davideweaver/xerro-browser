@@ -26,6 +26,7 @@ const inFlightCreations = new Map<string, Promise<string>>();
 export default function AgentDetailChat() {
   const { agentId } = useParams<{ agentId: string }>();
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [agentName, setAgentName] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [initKey, setInitKey] = useState(0);
 
@@ -38,6 +39,10 @@ export default function AgentDetailChat() {
     const init = async () => {
       setSessionId(null);
       setError(null);
+
+      agentsService.getAgent(agentId)
+        .then(a => { if (!cancelled) setAgentName(a.name); })
+        .catch(() => {});
 
       const stored = localStorage.getItem(storageKey(agentId));
       if (stored) {
@@ -55,7 +60,7 @@ export default function AgentDetailChat() {
         promise = agentsService.getAgent(agentId)
           .then(a => a.name)
           .catch(() => "Agent Chat")
-          .then(agentName => chatService.createSession(agentName, undefined, undefined, agentId))
+          .then(name => chatService.createSession(name, undefined, undefined, agentId))
           .then(session => {
             localStorage.setItem(storageKey(agentId), session.id);
             return session.id;
@@ -98,5 +103,12 @@ export default function AgentDetailChat() {
     setInitKey(k => k + 1);
   };
 
-  return <ChatSession sessionId={sessionId} onDelete={handleDelete} />;
+  return (
+    <ChatSession
+      sessionId={sessionId}
+      onDelete={handleDelete}
+      title="Chat"
+      description={agentName ? `What would you like ${agentName} to do?` : undefined}
+    />
+  );
 }

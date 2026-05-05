@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { chatService } from "@/api/chatService";
+import { agentsService } from "@/api/agentsService";
 import { llamacppAdminService } from "@/api/llamacppAdminService";
 import type { ChatSessionConfig } from "@/types/xerroChat";
 import { BaseDialog } from "@/components/BaseDialog";
@@ -33,9 +34,13 @@ interface NewChatDialogProps {
   initialName?: string;
   initialGroupId?: string;
   sessionId?: string; // If provided, this is an edit dialog
+  agentMode?: boolean;
 }
 
 const DEFAULT_SETTINGS_SOURCES = ["project", "user"] as const;
+
+// Keep in sync with AgentDetailChat.tsx
+const agentStorageKey = (agentId: string) => `agent-chat-session-${agentId}`;
 
 export function NewChatDialog({
   open,
@@ -45,10 +50,12 @@ export function NewChatDialog({
   initialName = "",
   initialGroupId,
   sessionId,
+  agentMode = false,
 }: NewChatDialogProps) {
   const isEdit = !!sessionId;
 
   const [name, setName] = useState(initialName);
+  const [selectedAgentId, setSelectedAgentId] = useState("");
   const [cwd, setCwd] = useState(initialConfig?.cwd ?? "/Users/dweaver/Projects/ai/xerro-agent");
   const [permissions, setPermissions] = useState<"allow_all" | "restricted">(
     !initialConfig?.permissions || initialConfig.permissions === "allow_all"
@@ -72,6 +79,7 @@ export function NewChatDialog({
   useEffect(() => {
     if (open) {
       setName(initialName);
+      setSelectedAgentId("");
       setCwd(initialConfig?.cwd ?? "/Users/dweaver/Projects/ai/xerro-agent");
       setPermissions(
         !initialConfig?.permissions || initialConfig.permissions === "allow_all"
@@ -98,6 +106,14 @@ export function NewChatDialog({
   });
   const groups = groupsData?.groups ?? [];
 
+  // Fetch agents for agent mode
+  const { data: agentsData } = useQuery({
+    queryKey: ["agents-nav"],
+    queryFn: () => agentsService.listAgents(),
+    enabled: open && agentMode,
+  });
+  const agents = agentsData?.agents ?? [];
+
   // Fetch available LLM servers when local mode is on
   const { data: serversData } = useQuery({
     queryKey: ["llamacpp-servers"],
@@ -119,10 +135,12 @@ export function NewChatDialog({
 
   const handleSubmit = async () => {
     if (!name.trim() && !isEdit) return;
+    if (agentMode && !selectedAgentId) return;
     setIsSubmitting(true);
 
     const config: ChatSessionConfig = {
-      ...(cwd.trim() ? { cwd: cwd.trim() } : {}),
+      // In agent mode, cwd is auto-set by the backend from the agent workspace
+      ...(agentMode ? {} : cwd.trim() ? { cwd: cwd.trim() } : {}),
       ...(permissions === "allow_all" ? { permissions: "allow_all" as const } : {}),
       ...(useLocal
         ? {
@@ -143,7 +161,9 @@ export function NewChatDialog({
         });
         onCreated(sessionId);
       } else {
-        const session = await chatService.createSession(name.trim(), config, groupId || undefined);
+        const agentId = agentMode ? selectedAgentId : undefined;
+        const session = await chatService.createSession(name.trim(), config, groupId || undefined, agentId);
+        if (agentId) localStorage.setItem(agentStorageKey(agentId), session.id);
         onCreated(session.id);
       }
       onOpenChange(false);
@@ -159,7 +179,7 @@ export function NewChatDialog({
       </Button>
       <Button
         onClick={handleSubmit}
-        disabled={(!isEdit && !name.trim()) || isSubmitting}
+        disabled={(!isEdit && (!name.trim() || (agentMode && !selectedAgentId))) || isSubmitting}
       >
         {isSubmitting ? "Creating..." : isEdit ? "Save" : "Create"}
       </Button>
@@ -187,11 +207,37 @@ export function NewChatDialog({
             />
           </div>
 
-          {/* Working Directory */}
-          <div className="space-y-1.5">
-            <Label htmlFor="cwd">Working Directory</Label>
-            <WorkingDirectoryCombobox value={cwd} onChange={setCwd} />
-          </div>
+          {/* Agent selector (agent mode) or Working Directory (normal mode) */}
+          {agentMode ? (
+            <div className="space-y-1.5">
+              <Label>Agent</Label>
+              <Select
+                value={selectedAgentId || "__none__"}
+                onValueChange={(v) => {
+                  const id = v === "__none__" ? "" : v;
+                  setSelectedAgentId(id);
+                  if (id && !name.trim()) {
+                    const agent = agents.find((a) => a.id === id);
+                    if (agent) setName(agent.name);
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an agent…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {agents.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <Label htmlFor="cwd">Working Directory</Label>
+              <WorkingDirectoryCombobox value={cwd} onChange={setCwd} />
+            </div>
+          )}
 
           {/* Group (create mode only) */}
           {!isEdit && groups.length > 0 && (

@@ -10,6 +10,7 @@ import { MessagesSquare, Plus } from "lucide-react";
 export default function ChatSessions() {
   const navigate = useNavigate();
   const [newChatOpen, setNewChatOpen] = useState(false);
+  const agentMode = localStorage.getItem("chat-nav-mode") === "agents";
 
   const { data, isLoading } = useQuery({
     queryKey: ["chat-sessions"],
@@ -74,6 +75,7 @@ export default function ChatSessions() {
         open={newChatOpen}
         onOpenChange={setNewChatOpen}
         onCreated={handleSessionCreated}
+        agentMode={agentMode}
       />
     </>
   );
