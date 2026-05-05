@@ -9,6 +9,7 @@ import {
   ListTodo,
   BookMarked,
   MessagesSquare,
+  Inbox,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -33,6 +34,20 @@ export const navigationConfig: PrimaryNavItem[] = [
     icon: Home,
     label: 'Home',
     defaultPath: '/',
+    secondaryItems: []
+  },
+  {
+    key: 'messages',
+    icon: Inbox,
+    label: 'Messages',
+    defaultPath: '/agent-tasks/messages',
+    secondaryItems: []
+  },
+  {
+    key: 'todos',
+    icon: ListTodo,
+    label: 'Todos',
+    defaultPath: '/todos',
     secondaryItems: []
   },
   {
@@ -69,13 +84,6 @@ export const navigationConfig: PrimaryNavItem[] = [
     ]
   },
   {
-    key: 'todos',
-    icon: ListTodo,
-    label: 'Todos',
-    defaultPath: '/todos',
-    secondaryItems: []
-  },
-  {
     key: 'agent-tasks',
     icon: Bot,
     iconClassName: '[&_svg]:!size-6',
@@ -94,8 +102,10 @@ export function getActivePrimary(pathname: string): string | null {
   if (pathname.startsWith('/memory')) return 'memory';
   // Todos routes
   if (pathname.startsWith('/todos')) return 'todos';
-  // Agent Tasks routes
   if (pathname.startsWith('/chat')) return 'chat';
+  // Messages routes (must come before /agent-tasks)
+  if (pathname.startsWith('/agent-tasks/messages')) return 'messages';
+  // Agent Tasks routes
   if (pathname.startsWith('/agent-tasks')) return 'agent-tasks';
   if (pathname.startsWith('/system')) return 'system';
   return null;

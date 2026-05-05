@@ -1,13 +1,12 @@
 import { Outlet, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
-import { useQuery } from "@tanstack/react-query";
 import { useTasksRunning } from "@/hooks/use-tasks-running";
 import { useUnreadNotificationCount } from "@/hooks/use-unread-notification-count";
+import { useUnreadMessageCount } from "@/hooks/use-unread-message-count";
 import { useDocumentQueryUpdates } from "@/hooks/use-document-query-updates";
 import { useMemoryQueryUpdates } from "@/hooks/use-memory-query-updates";
 import { useAgentQueryUpdates } from "@/hooks/use-agent-query-updates";
 import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
-import { messagesService } from "@/api/messagesService";
 import { WifiOff } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
@@ -19,6 +18,7 @@ import { HomeSecondaryNav } from "@/components/navigation/HomeSecondaryNav";
 import { ProjectsSecondaryNav } from "@/components/navigation/ProjectsSecondaryNav";
 import { DocumentsSecondaryNav } from "@/components/navigation/DocumentsSecondaryNav";
 import { AgentTasksSecondaryNav } from "@/components/navigation/AgentTasksSecondaryNav";
+import { MessagesSecondaryNav } from "@/components/navigation/MessagesSecondaryNav";
 import { ChatSecondaryNav } from "@/components/navigation/ChatSecondaryNav";
 import { TodosSecondaryNav } from "@/components/navigation/TodosSecondaryNav";
 import { SystemSecondaryNav } from "@/components/navigation/SystemSecondaryNav";
@@ -42,11 +42,7 @@ const Layout = () => {
   const { isConnected: xerroIsConnected } = useXerroWebSocketContext();
   const isTasksRunning = useTasksRunning();
   const { unreadCount } = useUnreadNotificationCount();
-  const { data: messagesUnreadCount = 0 } = useQuery({
-    queryKey: ["messages-unread-count"],
-    queryFn: () => messagesService.getUnreadCount(),
-    refetchInterval: 60_000,
-  });
+  const { unreadCount: messagesUnreadCount } = useUnreadMessageCount();
   useDocumentQueryUpdates();
   useMemoryQueryUpdates();
   useAgentQueryUpdates();
@@ -210,6 +206,9 @@ const Layout = () => {
   const selectedAgentId = params.agentId || null;
   const isAgentTasksSection = activePrimary === "agent-tasks";
 
+  // Messages section flag
+  const isMessagesSection = activePrimary === "messages";
+
   // Home section flag
   const isHomeSection = activePrimary === "home";
   const selectedTopicId = params.topicId || null;
@@ -230,8 +229,7 @@ const Layout = () => {
   const [currentMemoryFolder, setCurrentMemoryFolder] = useState<string>("");
 
   // Determine current view for Agent Tasks section
-  const getAgentTasksView = (): "history" | "scheduled" | "activity" | "messages" | "agent" | "analytics" => {
-    if (pathname.startsWith("/agent-tasks/messages")) return "messages";
+  const getAgentTasksView = (): "history" | "scheduled" | "activity" | "agent" | "analytics" => {
     if (pathname === "/agent-tasks/activity") return "activity";
     if (pathname === "/agent-tasks/history") return "history";
     if (pathname === "/agent-tasks/analytics") return "analytics";
@@ -295,7 +293,7 @@ const Layout = () => {
 
   // Indicators for navigation items (top-right corner)
   const navIndicators = {
-    "agent-tasks": messagesUnreadCount > 0 ? (
+    "messages": messagesUnreadCount > 0 ? (
       <NotificationBadge count={messagesUnreadCount} size="sm" />
     ) : null,
     "home": unreadCount > 0 ? (
@@ -354,9 +352,13 @@ const Layout = () => {
         ) : isAgentTasksSection ? (
           <AgentTasksSecondaryNav
             selectedTaskId={selectedTaskId}
-            selectedThreadId={selectedThreadId}
             selectedAgentId={selectedAgentId}
             currentView={agentTasksView}
+            onNavigate={handleNavigate}
+          />
+        ) : isMessagesSection ? (
+          <MessagesSecondaryNav
+            selectedThreadId={selectedThreadId}
             onNavigate={handleNavigate}
           />
         ) : isChatSection ? (
@@ -432,9 +434,13 @@ const Layout = () => {
               ) : isAgentTasksSection ? (
                 <AgentTasksSecondaryNav
                   selectedTaskId={selectedTaskId}
-                  selectedThreadId={selectedThreadId}
                   selectedAgentId={selectedAgentId}
                   currentView={agentTasksView}
+                  onNavigate={() => {}}
+                />
+              ) : isMessagesSection ? (
+                <MessagesSecondaryNav
+                  selectedThreadId={selectedThreadId}
                   onNavigate={() => {}}
                 />
               ) : isChatSection ? (
@@ -499,11 +505,16 @@ const Layout = () => {
             ) : isAgentTasksSection ? (
               <AgentTasksSecondaryNav
                 selectedTaskId={selectedTaskId}
-                selectedThreadId={selectedThreadId}
                 selectedAgentId={selectedAgentId}
                 currentView={agentTasksView}
                 onNavigate={handleNavigate}
                 onTaskSelect={handleMobileNavigate}
+              />
+            ) : isMessagesSection ? (
+              <MessagesSecondaryNav
+                selectedThreadId={selectedThreadId}
+                onNavigate={handleNavigate}
+                onThreadSelect={handleMobileNavigate}
               />
             ) : isChatSection ? (
               <ChatSecondaryNav

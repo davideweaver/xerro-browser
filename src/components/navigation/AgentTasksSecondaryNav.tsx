@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import { agentTasksService } from "@/api/agentTasksService";
 import { agentsService } from "@/api/agentsService";
-import { messagesService } from "@/api/messagesService";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
@@ -21,7 +20,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
 import { AgentFolderPropertiesSheet } from "@/components/agents/AgentFolderPropertiesSheet";
 import {
   Search,
@@ -30,9 +28,6 @@ import {
   Activity,
   Bot,
   BotOff,
-  MailOpen,
-  MessagesSquare,
-  Pencil,
   ChevronLeft,
   CalendarClock,
   Settings,
@@ -52,20 +47,14 @@ import {
 import { useDebounce } from "@/hooks/use-debounce";
 import { useTaskConfigUpdates } from "@/hooks/use-task-config-updates";
 import { useTasksRunning } from "@/hooks/use-tasks-running";
-import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
-import { MessageCard } from "@/components/messages/MessageCard";
-import { ComposeMessage } from "@/components/messages/ComposeMessage";
 import { CreateAgentDialog } from "@/components/agents/CreateAgentDialog";
-import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import { toast } from "sonner";
-import type { MessageThread } from "@/types/messages";
 import type { AgentSection } from "@/types/agents";
 
 interface AgentTasksSecondaryNavProps {
   selectedTaskId: string | null;
-  selectedThreadId?: string | null;
   selectedAgentId: string | null;
-  currentView: "history" | "scheduled" | "activity" | "messages" | "agent" | "analytics";
+  currentView: "history" | "scheduled" | "activity" | "agent" | "analytics";
   onNavigate: (path: string) => void;
   onTaskSelect?: (path: string) => void;
 }
@@ -87,7 +76,6 @@ function getFileNavIcon(name: string) {
 
 export function AgentTasksSecondaryNav({
   selectedTaskId,
-  selectedThreadId,
   selectedAgentId,
   currentView,
   onNavigate,
@@ -96,10 +84,7 @@ export function AgentTasksSecondaryNav({
   const [searchInput, setSearchInput] = useState("");
   const debouncedSearch = useDebounce(searchInput, 300);
   const isTasksRunning = useTasksRunning();
-  const [composeOpen, setComposeOpen] = useState(false);
   const [createAgentOpen, setCreateAgentOpen] = useState(false);
-  const [threadToDelete, setThreadToDelete] = useState<string | null>(null);
-  const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const { pathname, search: locationSearch } = useLocation();
 
   const [showDisabled, setShowDisabled] = useState<boolean>(() => {
@@ -124,13 +109,8 @@ export function AgentTasksSecondaryNav({
     setFolderForProperties(null);
   }, [selectedAgentId]);
 
-  const queryClient = useQueryClient();
-  const { subscribeToMessageCreated, subscribeToMessageUpdated, subscribeToThreadDeleted } =
-    useXerroWebSocketContext();
-
   useTaskConfigUpdates();
 
-  const inMessages = currentView === "messages";
   const inScheduled = currentView === "scheduled";
   const inAgent = currentView === "agent";
 
@@ -148,18 +128,6 @@ export function AgentTasksSecondaryNav({
 
   // ── Queries ────────────────────────────────────────────────────────────────
 
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ["messages-unread-count"],
-    queryFn: () => messagesService.getUnreadCount(),
-    refetchInterval: 60_000,
-  });
-
-  const { data: threadsData, isLoading: threadsLoading } = useQuery({
-    queryKey: ["message-threads"],
-    queryFn: () => messagesService.listThreads(),
-    enabled: inMessages,
-  });
-
   const { data: tasksData, isLoading: tasksLoading, refetch: refetchTasks } = useQuery({
     queryKey: ["agent-tasks-nav", debouncedSearch],
     queryFn: () => agentTasksService.listTasks(),
@@ -169,7 +137,7 @@ export function AgentTasksSecondaryNav({
   const { data: agentsData, isLoading: agentsLoading } = useQuery({
     queryKey: ["agents-nav"],
     queryFn: () => agentsService.listAgents(),
-    enabled: !inMessages && !inScheduled && !inAgent,
+    enabled: !inScheduled && !inAgent,
   });
 
   const { data: agentDetail } = useQuery({
@@ -185,17 +153,6 @@ export function AgentTasksSecondaryNav({
   });
 
   // ── Mutations ──────────────────────────────────────────────────────────────
-
-  const deleteThreadMutation = useMutation({
-    mutationFn: (threadId: string) => messagesService.deleteThread(threadId),
-    onSuccess: (_data, threadId) => {
-      queryClient.invalidateQueries({ queryKey: ["message-threads"] });
-      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
-      if (threadId === selectedThreadId) {
-        handleNavigation("/agent-tasks/messages");
-      }
-    },
-  });
 
   const createAgentFileMutation = useMutation({
     mutationFn: (name: string) => {
@@ -227,25 +184,6 @@ export function AgentTasksSecondaryNav({
     onError: (err: Error) => toast.error(err.message),
   });
 
-  // ── Real-time message updates ──────────────────────────────────────────────
-
-  useEffect(() => {
-    const unsub1 = subscribeToMessageCreated(() => {
-      queryClient.invalidateQueries({ queryKey: ["message-threads"] });
-      queryClient.invalidateQueries({ queryKey: ["messages-sent"] });
-      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
-    });
-    const unsub2 = subscribeToMessageUpdated(() => {
-      queryClient.invalidateQueries({ queryKey: ["message-threads"] });
-      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
-    });
-    const unsub3 = subscribeToThreadDeleted(() => {
-      queryClient.invalidateQueries({ queryKey: ["message-threads"] });
-      queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
-    });
-    return () => { unsub1(); unsub2(); unsub3(); };
-  }, [subscribeToMessageCreated, subscribeToMessageUpdated, subscribeToThreadDeleted, queryClient]);
-
   // ── Helpers ────────────────────────────────────────────────────────────────
 
   const tasks = tasksData?.tasks || [];
@@ -256,8 +194,6 @@ export function AgentTasksSecondaryNav({
   });
 
   const agents = agentsData?.agents || [];
-  const allThreads = threadsData?.threads || [];
-  const threads = showUnreadOnly ? allThreads.filter(t => t.unreadCount > 0) : allThreads;
 
   const handleNavigation = (path: string) => {
     if (onTaskSelect) {
@@ -290,28 +226,13 @@ export function AgentTasksSecondaryNav({
 
   // ── Title & Tools ──────────────────────────────────────────────────────────
 
-  const navTitle = inMessages
-    ? "Messages"
-    : inScheduled
+  const navTitle = inScheduled
     ? "Scheduled"
     : inAgent
     ? (agentDetail?.name ?? "Agent")
     : "Agents";
 
-  const navTools = inMessages ? (
-    <>
-      <SecondaryNavToolToggle
-        pressed={showUnreadOnly}
-        onPressedChange={setShowUnreadOnly}
-        title={showUnreadOnly ? "Show all messages" : "Show unread only"}
-      >
-        <MailOpen size={20} strokeWidth={showUnreadOnly ? 2.5 : 2} />
-      </SecondaryNavToolToggle>
-      <SecondaryNavToolButton onClick={() => setComposeOpen(true)} title="Compose message">
-        <Pencil size={20} />
-      </SecondaryNavToolButton>
-    </>
-  ) : inScheduled ? (
+  const navTools = inScheduled ? (
     <>
       <SecondaryNavToolToggle
         pressed={showDisabled}
@@ -324,7 +245,7 @@ export function AgentTasksSecondaryNav({
         <RefreshCw size={20} />
       </SecondaryNavToolButton>
     </>
-  ) : !inMessages && !inScheduled && !inAgent ? (
+  ) : !inScheduled && !inAgent ? (
     <SecondaryNavToolButton onClick={() => setCreateAgentOpen(true)} title="New agent">
       <Plus size={20} />
     </SecondaryNavToolButton>
@@ -353,40 +274,7 @@ export function AgentTasksSecondaryNav({
   return (
     <>
       <SecondaryNavContainer title={navTitle} tools={navTools}>
-        {inMessages ? (
-          /* ── Messages drill-down ── */
-          <>
-            <div className="px-6 pb-2">
-              <Button variant="ghost" size="sm" className="w-full justify-start"
-                onClick={() => onNavigate("/agent-tasks/activity")}>
-                <ChevronLeft className="h-4 w-4 mr-2" />Back
-              </Button>
-            </div>
-            <div className="flex-1 overflow-auto px-2 pb-4">
-              {threadsLoading ? (
-                <div className="space-y-1 px-2">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Skeleton key={i} className="h-[70px] w-full rounded-lg" />
-                  ))}
-                </div>
-              ) : threads.length === 0 ? (
-                <div className="text-sm text-muted-foreground text-center py-8">No messages yet</div>
-              ) : (
-                <div className="space-y-0.5">
-                  {threads.map((thread: MessageThread) => (
-                    <MessageCard
-                      key={thread.threadId}
-                      thread={thread}
-                      isActive={thread.threadId === selectedThreadId}
-                      onClick={() => handleNavigation(`/agent-tasks/messages/${thread.threadId}`)}
-                      onDelete={() => setThreadToDelete(thread.threadId)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </>
-        ) : inScheduled ? (
+        {inScheduled ? (
           /* ── Scheduled drill-down ── */
           <>
             <div className="px-6 pb-2">
@@ -637,18 +525,6 @@ export function AgentTasksSecondaryNav({
                   <SecondaryNavItemTitle className="flex-1">Scheduled</SecondaryNavItemTitle>
                 </div>
               </SecondaryNavItem>
-              <SecondaryNavItem isActive={false}
-                onClick={() => onNavigate("/agent-tasks/messages")}>
-                <div className="flex items-center gap-2 w-full">
-                  <MessagesSquare className="h-4 w-4 flex-shrink-0" />
-                  <SecondaryNavItemTitle className="flex-1">Messages</SecondaryNavItemTitle>
-                  {unreadCount > 0 && (
-                    <span className="text-xs bg-blue-500 text-white rounded-full px-1.5 py-0.5 leading-none flex-shrink-0">
-                      {unreadCount}
-                    </span>
-                  )}
-                </div>
-              </SecondaryNavItem>
               <SecondaryNavItem isActive={currentView === "analytics"}
                 onClick={() => handleNavigation("/agent-tasks/analytics")}>
                 <div className="flex items-center gap-2 w-full">
@@ -707,8 +583,6 @@ export function AgentTasksSecondaryNav({
         )}
       </SecondaryNavContainer>
 
-      <ComposeMessage open={composeOpen} onOpenChange={setComposeOpen} />
-
       <CreateAgentDialog
         open={createAgentOpen}
         onOpenChange={setCreateAgentOpen}
@@ -733,20 +607,6 @@ export function AgentTasksSecondaryNav({
         />
       )}
 
-      <DestructiveConfirmationDialog
-        open={threadToDelete !== null}
-        onOpenChange={(open) => { if (!open) setThreadToDelete(null); }}
-        onConfirm={() => {
-          if (threadToDelete) deleteThreadMutation.mutate(threadToDelete);
-          setThreadToDelete(null);
-        }}
-        onCancel={() => setThreadToDelete(null)}
-        title="Delete Thread"
-        description="Are you sure you want to delete this entire conversation? All messages will be permanently removed."
-        isLoading={deleteThreadMutation.isPending}
-        confirmText="Delete Thread"
-        confirmLoadingText="Deleting..."
-      />
     </>
   );
 }
