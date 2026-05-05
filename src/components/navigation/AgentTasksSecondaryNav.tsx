@@ -28,11 +28,11 @@ import {
   Activity,
   Bot,
   BotOff,
+  History,
   ChevronLeft,
   CalendarClock,
   Settings,
   Zap,
-  MessageSquare,
   Folder,
   File,
   FileText,
@@ -62,10 +62,11 @@ interface AgentTasksSecondaryNavProps {
 const STORAGE_KEY = "agent-tasks-show-disabled";
 
 const AGENT_SECTIONS: { id: AgentSection; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { id: "chat", label: "Chat", icon: MessageSquare },
+  { id: "history", label: "History", icon: History },
   { id: "config", label: "Config", icon: Settings },
   { id: "triggers", label: "Triggers", icon: Zap },
   { id: "analytics", label: "Analytics", icon: BarChart2 },
+  // { id: "chat", label: "Chat", icon: MessageSquare },
 ];
 
 function getFileNavIcon(name: string) {
@@ -558,7 +559,7 @@ export function AgentTasksSecondaryNav({
                     <SecondaryNavItem
                       key={agent.id}
                       isActive={false}
-                      onClick={() => onNavigate(`/agent-tasks/agents/${agent.id}/chat`)}
+                      onClick={() => onNavigate(`/agent-tasks/agents/${agent.id}/history`)}
                       className={!agent.enabled ? "opacity-50" : ""}
                     >
                       <div className="flex flex-col items-start w-full gap-0.5">

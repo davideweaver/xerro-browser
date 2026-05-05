@@ -11,15 +11,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { agentsService } from "@/api/agentsService";
-import { TaskExecutionRow } from "@/components/tasks/TaskExecutionRow";
-import { TaskExecutionSheet } from "@/components/tasks/TaskExecutionSheet";
 import { formatTimestamp, formatRelativeTime } from "@/lib/cronFormatter";
-import { Play, Power, Loader2, Pencil, Save, X, History, Trash2 } from "lucide-react";
+import { Play, Power, Loader2, Pencil, Save, X, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAgentCompletionUpdates } from "@/hooks/use-agent-completion-updates";
 import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
-import type { TaskExecution } from "@/types/agentTasks";
 
 export default function AgentDetailConfig() {
   const { agentId } = useParams<{ agentId: string }>();
@@ -30,8 +27,6 @@ export default function AgentDetailConfig() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editTimeout, setEditTimeout] = useState("");
-  const [selectedExecution, setSelectedExecution] = useState<TaskExecution | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   useAgentCompletionUpdates();
@@ -52,12 +47,6 @@ export default function AgentDetailConfig() {
   const { data: agent, isLoading } = useQuery({
     queryKey: ["agent", agentId],
     queryFn: () => agentsService.getAgent(agentId!),
-    enabled: !!agentId,
-  });
-
-  const { data: historyData, isLoading: historyLoading } = useQuery({
-    queryKey: ["agent-history", agentId],
-    queryFn: () => agentsService.getHistory(agentId!),
     enabled: !!agentId,
   });
 
@@ -278,41 +267,7 @@ export default function AgentDetailConfig() {
             </div>
           </CardContent>
         </Card>
-        {/* History section */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">History</h2>
-          {historyLoading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          ) : (historyData?.executions ?? []).length === 0 ? (
-            <Card>
-              <CardContent className="p-8 flex flex-col items-center gap-3 text-center">
-                <History className="h-8 w-8 text-muted-foreground/40" />
-                <p className="text-sm text-muted-foreground">No execution history yet.</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-2">
-              {(historyData?.executions ?? []).map((execution, i) => (
-                <TaskExecutionRow
-                  key={execution.id ?? i}
-                  execution={execution}
-                  onClick={() => { setSelectedExecution(execution); setSheetOpen(true); }}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
-
-      <TaskExecutionSheet
-        execution={selectedExecution}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
 
       <DestructiveConfirmationDialog
         open={deleteConfirmOpen}
