@@ -70,7 +70,7 @@ export function ComposeMessage({ open, onOpenChange, defaultToId, defaultToName,
       setToName(defaultToName || "");
       setSubject(defaultSubject || "");
       setBody(defaultBody || "");
-      navigate(`/agent-tasks/messages/${message.threadId}`);
+      navigate(`/inbox/${message.threadId}`);
     },
   });
 

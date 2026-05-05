@@ -39,8 +39,8 @@ export const navigationConfig: PrimaryNavItem[] = [
   {
     key: 'messages',
     icon: Inbox,
-    label: 'Messages',
-    defaultPath: '/agent-tasks/messages',
+    label: 'Inbox',
+    defaultPath: '/inbox',
     secondaryItems: []
   },
   {
@@ -103,8 +103,8 @@ export function getActivePrimary(pathname: string): string | null {
   // Todos routes
   if (pathname.startsWith('/todos')) return 'todos';
   if (pathname.startsWith('/chat')) return 'chat';
-  // Messages routes (must come before /agent-tasks)
-  if (pathname.startsWith('/agent-tasks/messages')) return 'messages';
+  // Inbox routes
+  if (pathname.startsWith('/inbox')) return 'messages';
   // Agent Tasks routes
   if (pathname.startsWith('/agent-tasks')) return 'agent-tasks';
   if (pathname.startsWith('/system')) return 'system';

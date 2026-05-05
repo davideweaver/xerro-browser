@@ -34,7 +34,7 @@ export default function AgentTaskMessages() {
       setDeleteThreadOpen(false);
       queryClient.invalidateQueries({ queryKey: ["message-threads"] });
       queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
-      navigate("/agent-tasks/messages");
+      navigate("/inbox");
     },
   });
 
@@ -45,7 +45,7 @@ export default function AgentTaskMessages() {
     if (!lastAgentMessage) return;
     // Navigate first so MessageThreadView unmounts before the WS event arrives,
     // preventing the auto-mark-as-read effect from re-firing.
-    navigate("/agent-tasks/messages");
+    navigate("/inbox");
     messagesService.markUnread(lastAgentMessage.id).then(() => {
       queryClient.invalidateQueries({ queryKey: ["message-threads"] });
       queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
@@ -55,7 +55,7 @@ export default function AgentTaskMessages() {
 
   if (!threadId) {
     return (
-      <Container title="Messages" description="Select a conversation from the sidebar">
+      <Container title="Inbox" description="Select a conversation from the sidebar">
         <div className="flex flex-col items-center justify-center py-24 gap-3">
           <MessagesSquare className="h-12 w-12 text-muted-foreground/30" />
           <p className="text-sm text-muted-foreground">

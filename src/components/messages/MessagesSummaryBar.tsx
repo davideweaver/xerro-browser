@@ -20,7 +20,7 @@ export function MessagesSummaryBar() {
 
   return (
     <button
-      onClick={() => navigate("/agent-tasks/messages")}
+      onClick={() => navigate("/inbox")}
       className="w-full flex items-center gap-2.5 px-3 py-2.5 mb-6 rounded-lg bg-accent/40 hover:bg-accent/70 transition-colors text-left group"
     >
       <MessageSquare className="h-4 w-4 flex-shrink-0 text-emerald-400" />

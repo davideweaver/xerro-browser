@@ -41,7 +41,7 @@ export function MessagesSecondaryNav({
       queryClient.invalidateQueries({ queryKey: ["message-threads"] });
       queryClient.invalidateQueries({ queryKey: ["messages-unread-count"] });
       if (threadId === selectedThreadId) {
-        handleNavigation("/agent-tasks/messages");
+        handleNavigation("/inbox");
       }
     },
   });
@@ -91,7 +91,7 @@ export function MessagesSecondaryNav({
 
   return (
     <>
-      <SecondaryNavContainer title="Messages" tools={tools}>
+      <SecondaryNavContainer title="Inbox" tools={tools}>
         <div className="flex-1 overflow-auto px-2 pb-4">
           {threadsLoading ? (
             <div className="space-y-1 px-2">
@@ -108,7 +108,7 @@ export function MessagesSecondaryNav({
                   key={thread.threadId}
                   thread={thread}
                   isActive={thread.threadId === selectedThreadId}
-                  onClick={() => handleNavigation(`/agent-tasks/messages/${thread.threadId}`)}
+                  onClick={() => handleNavigation(`/inbox/${thread.threadId}`)}
                   onDelete={() => setThreadToDelete(thread.threadId)}
                 />
               ))}
