@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import { agentTasksService } from "@/api/agentTasksService";
+import { agentsService } from "@/api/agentsService";
 import { TaskExecutionSheet } from "@/components/tasks/TaskExecutionSheet";
 import { TaskExecutionRow } from "@/components/tasks/TaskExecutionRow";
 import { useTaskConfigUpdates } from "@/hooks/use-task-config-updates";
@@ -30,10 +31,21 @@ export default function AgentTaskHistory() {
   // Listen for agent completion events to refresh history
   useAgentCompletionUpdates();
 
-  const { data: recentRuns, isLoading } = useQuery({
+  const { data: scheduledRuns, isLoading: loadingScheduled } = useQuery({
     queryKey: ["agent-task-history"],
     queryFn: () => agentTasksService.getRecentRuns(50),
   });
+
+  const { data: agentRuns, isLoading: loadingAgents } = useQuery({
+    queryKey: ["agent-workspace-history"],
+    queryFn: () => agentsService.getAllHistory(50),
+  });
+
+  const isLoading = loadingScheduled || loadingAgents;
+
+  const recentRuns = [...(scheduledRuns ?? []), ...(agentRuns?.executions ?? [])].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
 
   // Mutation to delete individual execution
   const deleteExecutionMutation = useMutation({
@@ -71,7 +83,7 @@ export default function AgentTaskHistory() {
   return (
     <Container
       title="History"
-      description="Recent task executions across all agent tasks"
+      description="Recent executions across all scheduled tasks and workspace agents"
       tools={
         <ContainerToolButton
           onClick={() => setClearAllDialogOpen(true)}
@@ -89,17 +101,30 @@ export default function AgentTaskHistory() {
           recentRuns.map((execution, index) => (
             <TaskExecutionRow
               key={index}
-              execution={execution}
+              execution={{
+                ...execution,
+                taskName: execution.agentName ?? execution.taskName,
+              }}
               onClick={() => {
                 setSelectedExecution(execution);
                 setSheetOpen(true);
               }}
               showTaskName={true}
-              onTaskNameClick={() => navigate(`/agent-tasks/${execution.taskId}`)}
-              onDelete={(executionId) => {
-                setExecutionToDelete(executionId);
-                setDeleteExecutionDialogOpen(true);
-              }}
+              onTaskNameClick={
+                execution.agentId
+                  ? () => navigate(`/agents/${execution.agentId}`)
+                  : execution.taskId
+                  ? () => navigate(`/agent-tasks/${execution.taskId}`)
+                  : undefined
+              }
+              onDelete={
+                execution.agentId
+                  ? undefined
+                  : (executionId) => {
+                      setExecutionToDelete(executionId);
+                      setDeleteExecutionDialogOpen(true);
+                    }
+              }
             />
           ))
         ) : (

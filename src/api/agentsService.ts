@@ -75,6 +75,10 @@ class AgentsService {
     return this.request(`/api/v1/agents/${id}/history?limit=${limit}`);
   }
 
+  async getAllHistory(limit = 50): Promise<{ executions: TaskExecution[] }> {
+    return this.request(`/api/v1/agents/history?limit=${limit}`);
+  }
+
   // ── Workspace Files ─────────────────────────────────────────────────────────
 
   async listFiles(id: string, folder?: string): Promise<WorkspaceListing> {

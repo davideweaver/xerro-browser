@@ -57,8 +57,14 @@ export interface TaskExecution {
   model?: string;
   /** Whether a local model was used */
   isLocal?: boolean;
+  /** Task ID (when returned from executions list endpoint) */
+  taskId?: string;
   /** Task name (when returned from executions list endpoint) */
   taskName?: string;
+  /** Workspace agent ID (when returned from agents history endpoint) */
+  agentId?: string;
+  /** Workspace agent name (when returned from agents history endpoint) */
+  agentName?: string;
 }
 
 export interface ScheduledTaskListResponse {
