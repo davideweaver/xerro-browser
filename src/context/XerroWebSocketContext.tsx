@@ -155,6 +155,18 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
+    // Workspace agent status events - route through same callbacks
+    socket.on('agents:agent-status', (data: AgentStatusEvent) => {
+      console.log('[Xerro WebSocket] Workspace agent status:', data.status, data.taskName);
+      agentStatusCallbacksRef.current.forEach(callback => {
+        try {
+          callback(data);
+        } catch (error) {
+          console.error('[Xerro WebSocket] Error in agent status callback:', error);
+        }
+      });
+    });
+
     // Task configuration events - notify all subscribers
     socket.on('scheduled-tasks:task-created', (data: TaskConfigEvent) => {
       console.log('[Xerro WebSocket] Task created:', data.taskName);

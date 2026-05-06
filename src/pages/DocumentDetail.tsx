@@ -5,7 +5,7 @@ import Container from "@/components/container/Container";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { ContainerToolToggle } from "@/components/container/ContainerToolToggle";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X, SlidersHorizontal, MessageSquarePlus } from "lucide-react";
+import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X, SlidersHorizontal, MessageSquare } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -531,7 +531,7 @@ export default function DocumentDetail() {
                   disabled={!documentData}
                   title="Chat about this…"
                 >
-                  <MessageSquarePlus className="h-4 w-4" />
+                  <MessageSquare className="h-4 w-4" />
                 </ContainerToolButton>
                 <ContainerToolButton
                   size="icon"
@@ -577,7 +577,7 @@ export default function DocumentDetail() {
                 <MobileOverflowMenu title="More Options" disabled={!documentData}>
                   <MobileDrawerButton
                     onClick={() => setChatAboutOpen(true)}
-                    icon={<MessageSquarePlus className="h-4 w-4" />}
+                    icon={<MessageSquare className="h-4 w-4" />}
                   >
                     Chat about this…
                   </MobileDrawerButton>

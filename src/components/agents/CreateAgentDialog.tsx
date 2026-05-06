@@ -99,7 +99,6 @@ export function CreateAgentDialog({
       onOpenChange={onOpenChange}
       title="New Agent"
       footer={footer}
-      variant="floating"
       floatingClassName="md:max-w-md"
     >
       <div className="space-y-5">

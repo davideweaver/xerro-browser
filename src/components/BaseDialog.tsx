@@ -30,7 +30,7 @@ export function BaseDialog({
   footer,
   footerHeight = 64,
   children,
-  variant = "fullscreen",
+  variant = "floating",
   floatingClassName,
 }: BaseDialogProps) {
   const headerHeight = 64;

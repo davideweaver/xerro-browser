@@ -292,6 +292,7 @@ export interface WorkspaceFolderMovedPayload {
 export interface XerroWebSocketEvents {
   'events:list': (events: string[]) => void;
   'scheduled-tasks:agent-status': (data: AgentStatusEvent) => void;
+  'agents:agent-status': (data: AgentStatusEvent) => void;
   'scheduled-tasks:task-created': (data: TaskConfigEvent) => void;
   'scheduled-tasks:task-updated': (data: TaskConfigEvent) => void;
   'scheduled-tasks:task-deleted': (data: TaskConfigEvent) => void;

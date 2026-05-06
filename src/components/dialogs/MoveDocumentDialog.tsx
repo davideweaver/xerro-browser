@@ -127,7 +127,6 @@ export function MoveDocumentDialog({
       title="Move Document"
       footer={footer}
       footerHeight={64}
-      variant="floating"
       floatingClassName="md:min-h-[600px]"
     >
       <div className="space-y-4">

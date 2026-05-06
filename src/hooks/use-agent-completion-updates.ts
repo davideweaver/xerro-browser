@@ -41,8 +41,9 @@ export function useAgentCompletionUpdates() {
         queryClient.invalidateQueries({ queryKey: ['agent-task-scratchpad', event.taskId] });
         queryClient.invalidateQueries({ queryKey: ['agent-task-trace', event.taskId] });
 
-        // Invalidate agent history queries (used by /agent-tasks/agents/:id/config page)
+        // Invalidate agent history queries
         queryClient.invalidateQueries({ queryKey: ['agent-history'] });
+        queryClient.invalidateQueries({ queryKey: ['agent-workspace-history'] });
         queryClient.invalidateQueries({ queryKey: ['agent', event.taskId] });
       }
     });

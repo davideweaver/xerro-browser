@@ -89,7 +89,6 @@ export function ComposeMessage({ open, onOpenChange, defaultToId, defaultToName,
       open={open}
       onOpenChange={onOpenChange}
       title="New Message"
-      variant="floating"
       floatingClassName="md:max-w-lg"
       footer={
         <div className="flex justify-end gap-2">

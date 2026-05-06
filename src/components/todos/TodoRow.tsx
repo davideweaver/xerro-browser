@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ExcerptMarkdown } from "@/components/markdown/ExcerptMarkdown";
 import type { Todo } from "@/types/todos";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquarePlus } from "lucide-react";
+import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquare } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parseISO, addDays, startOfWeek, addWeeks } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -169,7 +169,7 @@ export function TodoRow({
                 {onOpen && <DropdownMenuSeparator />}
                 {onSendToChat && (
                   <DropdownMenuItem onClick={() => onSendToChat(todo)}>
-                    <MessageSquarePlus className="mr-2 h-4 w-4" />
+                    <MessageSquare className="mr-2 h-4 w-4" />
                     Chat about this…
                   </DropdownMenuItem>
                 )}
@@ -226,7 +226,7 @@ export function TodoRow({
                 {onSendToChat && (
                   <MobileDrawerButton
                     onClick={() => { setMenuOpen(false); onSendToChat(todo); }}
-                    icon={<MessageSquarePlus className="h-4 w-4" />}
+                    icon={<MessageSquare className="h-4 w-4" />}
                   >
                     Chat about this…
                   </MobileDrawerButton>
