@@ -42,6 +42,13 @@ export interface NormalizedTaskResult {
   };
 }
 
+export interface ExecutionTrigger {
+  id: string;
+  name: string;
+  type: string;
+  variant?: string;
+}
+
 export interface TaskExecution {
   /** Unique execution ID */
   id: string;
@@ -65,6 +72,8 @@ export interface TaskExecution {
   agentId?: string;
   /** Workspace agent name (when returned from agents history endpoint) */
   agentName?: string;
+  /** Trigger that fired this run (absent for manual/cron runs) */
+  trigger?: ExecutionTrigger;
 }
 
 export interface ScheduledTaskListResponse {
@@ -233,6 +242,7 @@ export interface RunningTask {
   toolName?: string;      // Current tool being used
   toolCallId?: string;    // Tool call ID
   isToolError?: boolean;  // Whether last tool result was an error
+  trigger?: ExecutionTrigger;
 }
 
 /**

@@ -209,6 +209,14 @@ function RunningTaskCard({
               <span className="font-medium">Type:</span>
               <span>{task.taskType}</span>
             </div>
+
+            {/* Trigger */}
+            {task.trigger && (
+              <div className="flex items-center gap-1.5 text-yellow-600 dark:text-yellow-500">
+                <Zap className="h-3 w-3" />
+                <span>{task.trigger.name}</span>
+              </div>
+            )}
           </div>
 
           {/* Action Links (only for completed tasks) */}
@@ -381,6 +389,7 @@ export default function TaskActivity() {
               : undefined),
           toolCallId: event.toolCallId,
           isToolError: event.isToolError,
+          trigger: event.trigger ?? existing?.trigger,
         });
       }
 

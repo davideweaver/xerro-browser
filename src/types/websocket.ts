@@ -154,6 +154,7 @@ export interface AgentStatusEvent {
   isToolError?: boolean;       // Whether tool result is an error (for tool_result)
   error?: string;
   timestamp: string;
+  trigger?: import("@/types/agentTasks").ExecutionTrigger;
 }
 
 export interface DocumentChangeEvent {

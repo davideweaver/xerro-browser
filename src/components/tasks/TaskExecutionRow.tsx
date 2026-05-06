@@ -1,5 +1,5 @@
 import { formatTimestamp, formatDuration } from "@/lib/cronFormatter";
-import { CheckCircle2, XCircle, X } from "lucide-react";
+import { CheckCircle2, XCircle, X, Zap } from "lucide-react";
 import type { TaskExecution } from "@/types/agentTasks";
 import { ExcerptMarkdown } from "@/components/markdown/ExcerptMarkdown";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -59,16 +59,20 @@ export function TaskExecutionRow({
       <div className="flex-1 space-y-1">
         <div className="flex items-center gap-3">
           {renderExecutionStatus()}
-          {showTaskName && onTaskNameClick && (
-            <button
-              className="text-sm font-medium hover:underline text-left"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTaskNameClick();
-              }}
-            >
-              {execution.taskName}
-            </button>
+          {showTaskName && execution.taskName && (
+            onTaskNameClick ? (
+              <button
+                className="text-sm font-medium hover:underline text-left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTaskNameClick();
+                }}
+              >
+                {execution.taskName}
+              </button>
+            ) : (
+              <span className="text-sm font-medium">{execution.taskName}</span>
+            )
           )}
         </div>
         <div className="text-sm text-muted-foreground pl-6">
@@ -86,6 +90,12 @@ export function TaskExecutionRow({
           {execution.isLocal !== undefined &&
             ` · ${execution.isLocal ? "Local" : "API"}`}
         </div>
+        {execution.trigger && (
+          <div className="flex items-center gap-1.5 pl-6 text-xs text-yellow-600 dark:text-yellow-500">
+            <Zap className="h-3 w-3" />
+            <span>{execution.trigger.name}</span>
+          </div>
+        )}
         {execution.error && (
           <p className="text-sm text-red-600 dark:text-red-400 pl-6 truncate max-w-2xl">
             {execution.error}

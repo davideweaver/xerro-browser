@@ -8,7 +8,7 @@ import type { TaskExecution } from "@/types/agentTasks";
 import { TaskExecutionDisplay } from "./TaskExecutionDisplay";
 import { agentTasksService } from "@/api/agentTasksService";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Zap } from "lucide-react";
 import { formatTimestamp, formatRelativeTime } from "@/lib/cronFormatter";
 
 interface TaskExecutionSheetProps {
@@ -36,6 +36,7 @@ export function TaskExecutionSheet({
       <SheetContent className="overflow-y-auto w-full sm:max-w-2xl">
         <SidePanelHeader
           title="Execution Details"
+          description={execution.agentName ?? execution.taskName}
           headerClassName="-mt-0 pt-1"
         />
 
@@ -100,6 +101,26 @@ export function TaskExecutionSheet({
               {/* Task Execution Display - New normalized format */}
               {(execution.normalizedResult || execution.data) && (
                 <TaskExecutionDisplay execution={execution} />
+              )}
+
+              {/* Trigger */}
+              {execution.trigger && (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Triggered By</span>
+                      <div className="flex items-center gap-1.5 text-sm text-yellow-600 dark:text-yellow-500">
+                        <Zap className="h-3.5 w-3.5" />
+                        <span>{execution.trigger.name}</span>
+                        {execution.trigger.variant && (
+                          <Badge variant="secondary" className="text-xs capitalize">
+                            {execution.trigger.variant}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Timestamp */}
