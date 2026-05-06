@@ -22,7 +22,7 @@ export default function AgentTaskHistory() {
     useState<TaskExecution | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [deleteExecutionDialogOpen, setDeleteExecutionDialogOpen] = useState(false);
-  const [executionToDelete, setExecutionToDelete] = useState<string | null>(null);
+  const [executionToDelete, setExecutionToDelete] = useState<{ id: string; agentId?: string } | null>(null);
   const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
 
   // Listen for real-time task configuration updates
@@ -47,23 +47,27 @@ export default function AgentTaskHistory() {
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
-  // Mutation to delete individual execution
+  // Mutation to delete individual execution (scheduled task or workspace agent)
   const deleteExecutionMutation = useMutation({
-    mutationFn: (executionId: string) => agentTasksService.deleteExecution(executionId),
+    mutationFn: ({ id, agentId }: { id: string; agentId?: string }): Promise<unknown> =>
+      agentId
+        ? agentsService.deleteExecution(id, agentId)
+        : agentTasksService.deleteExecution(id),
     onSuccess: () => {
-      // Invalidate history query to refresh data
       queryClient.invalidateQueries({ queryKey: ["agent-task-history"] });
+      queryClient.invalidateQueries({ queryKey: ["agent-workspace-history"] });
       setDeleteExecutionDialogOpen(false);
       setExecutionToDelete(null);
     },
   });
 
-  // Mutation to clear all history
+  // Mutation to clear all history (both scheduled tasks and workspace agents)
   const clearAllMutation = useMutation({
-    mutationFn: () => agentTasksService.clearAllHistory(),
+    mutationFn: () =>
+      Promise.all([agentTasksService.clearAllHistory(), agentsService.clearAllHistory()]),
     onSuccess: () => {
-      // Invalidate queries to refresh UI
       queryClient.invalidateQueries({ queryKey: ["agent-task-history"] });
+      queryClient.invalidateQueries({ queryKey: ["agent-workspace-history"] });
       setClearAllDialogOpen(false);
     },
   });
@@ -117,14 +121,10 @@ export default function AgentTaskHistory() {
                   ? () => navigate(`/agent-tasks/${execution.taskId}`)
                   : undefined
               }
-              onDelete={
-                execution.agentId
-                  ? undefined
-                  : (executionId) => {
-                      setExecutionToDelete(executionId);
-                      setDeleteExecutionDialogOpen(true);
-                    }
-              }
+              onDelete={(executionId) => {
+                setExecutionToDelete({ id: executionId, agentId: execution.agentId });
+                setDeleteExecutionDialogOpen(true);
+              }}
             />
           ))
         ) : (
@@ -158,6 +158,7 @@ export default function AgentTaskHistory() {
           setDeleteExecutionDialogOpen(false);
           setExecutionToDelete(null);
         }}
+
         title="Delete Execution"
         description="Are you sure you want to delete this execution from history? This action cannot be undone."
         isLoading={deleteExecutionMutation.isPending}

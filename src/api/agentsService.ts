@@ -79,6 +79,17 @@ class AgentsService {
     return this.request(`/api/v1/agents/history?limit=${limit}`);
   }
 
+  async clearAllHistory(): Promise<{ cleared: number }> {
+    return this.request(`/api/v1/agents/history`, { method: "DELETE" });
+  }
+
+  async deleteExecution(executionId: string, agentId: string): Promise<{ deleted: boolean }> {
+    return this.request(
+      `/api/v1/agents/history/${executionId}?agentId=${encodeURIComponent(agentId)}`,
+      { method: "DELETE" }
+    );
+  }
+
   // ── Workspace Files ─────────────────────────────────────────────────────────
 
   async listFiles(id: string, folder?: string): Promise<WorkspaceListing> {
