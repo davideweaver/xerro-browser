@@ -5,7 +5,7 @@ import Container from "@/components/container/Container";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { ContainerToolToggle } from "@/components/container/ContainerToolToggle";
 import { Badge } from "@/components/ui/badge";
-import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X, SlidersHorizontal } from "lucide-react";
+import { Copy, ChevronLeft, FolderOpen, FolderInput, RefreshCw, Trash2, AlertCircle, WifiOff, Bookmark, ChevronDown, Pencil, CheckCheck, Loader2, X, SlidersHorizontal, MessageSquarePlus } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +20,7 @@ import { setCurrentFolderPath, clearLastDocumentPath } from "@/lib/documentsStor
 import DestructiveConfirmationDialog from "@/components/dialogs/DestructiveConfirmationDialog";
 import { MoveDocumentDialog } from "@/components/dialogs/MoveDocumentDialog";
 import { FrontmatterSheet } from "@/components/dialogs/FrontmatterSheet";
+import { ChatAboutDialog } from "@/components/chat-sessions/ChatAboutDialog";
 import { useState, useCallback, useRef } from "react";
 import { MarkdownViewer, ExcalidrawViewer } from "@/components/document-viewers";
 import { getFileType, DocumentFileType } from "@/lib/fileTypeUtils";
@@ -35,6 +36,7 @@ export default function DocumentDetail() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [propertiesOpen, setPropertiesOpen] = useState(false);
+  const [chatAboutOpen, setChatAboutOpen] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState("");
@@ -525,6 +527,14 @@ export default function DocumentDetail() {
               <div className="hidden md:flex items-center gap-2">
                 <ContainerToolButton
                   size="icon"
+                  onClick={() => setChatAboutOpen(true)}
+                  disabled={!documentData}
+                  title="Chat about this…"
+                >
+                  <MessageSquarePlus className="h-4 w-4" />
+                </ContainerToolButton>
+                <ContainerToolButton
+                  size="icon"
                   onClick={handleRefresh}
                   disabled={!documentPath}
                 >
@@ -565,6 +575,12 @@ export default function DocumentDetail() {
               {/* Mobile: overflow drawer (hidden on desktop) */}
               <div className="md:hidden">
                 <MobileOverflowMenu title="More Options" disabled={!documentData}>
+                  <MobileDrawerButton
+                    onClick={() => setChatAboutOpen(true)}
+                    icon={<MessageSquarePlus className="h-4 w-4" />}
+                  >
+                    Chat about this…
+                  </MobileDrawerButton>
                   <ContainerToolButton
                     size="icon"
                     onClick={handleRefresh}
@@ -715,6 +731,15 @@ export default function DocumentDetail() {
         title="Delete Document"
         description={`Are you sure you want to delete "${fileName}"? This action cannot be undone.`}
         isLoading={deleteDocumentMutation.isPending}
+      />
+
+      {/* Chat About Dialog */}
+      <ChatAboutDialog
+        open={chatAboutOpen}
+        onOpenChange={setChatAboutOpen}
+        sessionName={fileName}
+        firstMessage={documentData?.absolutePath ?? ""}
+        defaultMode="chat"
       />
     </Container>
   );

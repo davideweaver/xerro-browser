@@ -17,7 +17,7 @@ import { TodoRow } from "@/components/todos/TodoRow";
 import { TodoEditSheet } from "@/components/todos/TodoEditSheet";
 import { CreateTodoDialog } from "@/components/todos/CreateTodoDialog";
 import { useDeleteTodoConfirmation } from "@/hooks/use-delete-todo-confirmation";
-import { useSendTodoToChat } from "@/hooks/use-send-todo-to-chat";
+import { ChatAboutDialog } from "@/components/chat-sessions/ChatAboutDialog";
 import { ComposeMessage } from "@/components/messages/ComposeMessage";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -96,8 +96,15 @@ export default function Todos() {
   const [closedProjects, setClosedProjects] = useState<Set<string>>(new Set());
 
   const { confirmDelete, DeleteConfirmationDialog } = useDeleteTodoConfirmation();
-  const sendToChat = useSendTodoToChat();
+  const [chatAboutTodo, setChatAboutTodo] = useState<Todo | null>(null);
   const [composeForTodo, setComposeForTodo] = useState<Todo | null>(null);
+
+  const PROJECTS_BASE = "/Users/dweaver/Projects/ai/claude-assist/projects";
+  const buildTodoPrompt = (todo: Todo): string => {
+    const lines = [`Help me work on this todo: "${todo.title}"`];
+    if (todo.body) lines.push(`\nContext:\n${todo.body}`);
+    return lines.join("");
+  };
 
   const handleToggleCompleted = (val: boolean) => {
     setShowCompleted(val);
@@ -356,7 +363,7 @@ export default function Todos() {
                           }
                           onDelete={() => confirmDelete(todo)}
                           onOpen={setEditTodo}
-                          onSendToChat={sendToChat}
+                          onSendToChat={(todo) => setChatAboutTodo(todo)}
                           onSendToAgent={setComposeForTodo}
                         />
                       ))}
@@ -378,7 +385,7 @@ export default function Todos() {
                 }
                 onDelete={() => confirmDelete(todo)}
                 onOpen={setEditTodo}
-                onSendToChat={sendToChat}
+                onSendToChat={(todo) => setChatAboutTodo(todo)}
                 onSendToAgent={setComposeForTodo}
               />
             ))}
@@ -410,6 +417,16 @@ export default function Todos() {
       />
 
       <DeleteConfirmationDialog />
+
+      <ChatAboutDialog
+        open={!!chatAboutTodo}
+        onOpenChange={(open) => { if (!open) setChatAboutTodo(null); }}
+        sessionName={chatAboutTodo?.title ?? ""}
+        firstMessage={chatAboutTodo ? buildTodoPrompt(chatAboutTodo) : ""}
+        defaultMode={chatAboutTodo?.agentId ? "agent" : chatAboutTodo?.projectName ? "project" : "chat"}
+        defaultAgentId={chatAboutTodo?.agentId}
+        defaultProjectPath={chatAboutTodo?.projectName ? `${PROJECTS_BASE}/${chatAboutTodo.projectName}` : undefined}
+      />
 
       <ComposeMessage
         open={!!composeForTodo}

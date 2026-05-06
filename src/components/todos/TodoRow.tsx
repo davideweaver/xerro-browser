@@ -170,7 +170,7 @@ export function TodoRow({
                 {onSendToChat && (
                   <DropdownMenuItem onClick={() => onSendToChat(todo)}>
                     <MessageSquarePlus className="mr-2 h-4 w-4" />
-                    Send to Chat
+                    Chat about this…
                   </DropdownMenuItem>
                 )}
                 {onSendToAgent && todo.agentId && (
@@ -228,7 +228,7 @@ export function TodoRow({
                     onClick={() => { setMenuOpen(false); onSendToChat(todo); }}
                     icon={<MessageSquarePlus className="h-4 w-4" />}
                   >
-                    Send to Chat
+                    Chat about this…
                   </MobileDrawerButton>
                 )}
                 {onSendToAgent && todo.agentId && (
