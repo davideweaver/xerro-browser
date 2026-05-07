@@ -398,6 +398,8 @@ export default function Todos() {
         onClose={() => setEditTodo(null)}
         onSave={handleSave}
         onOpenEditDialog={handleOpenEditDialog}
+        onSendToChat={(todo) => { setEditTodo(null); setChatAboutTodo(todo); }}
+        onSendToAgent={(todo) => { setEditTodo(null); setComposeForTodo(todo); }}
       />
 
       <CreateTodoDialog
