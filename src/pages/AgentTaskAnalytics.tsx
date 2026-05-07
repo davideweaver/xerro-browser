@@ -360,7 +360,7 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
             data={tsCost ?? []}
             color="#8b5cf6"
             window={selectedWindow}
-            valueFormatter={(v) => `$${v.toFixed(4)}`}
+            valueFormatter={(v) => `$${v.toFixed(2)}`}
           />
         )}
       </div>
