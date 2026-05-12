@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { CalendarIcon, Check, ChevronsUpDown, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import type { CreateTodoInput, Todo, UpdateTodoInput } from "@/types/todos";
+import type { CreateTodoInput, Todo, TodoPriority, UpdateTodoInput } from "@/types/todos";
 import { xerroProjectsService } from "@/api/xerroProjectsService";
 import { todosService } from "@/api/todosService";
+import { PrioritySelector } from "@/components/todos/PrioritySelector";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -61,6 +62,7 @@ export function CreateTodoDialog({
   const [body, setBody] = useState("");
   const [projectName, setProjectName] = useState<string | null>(defaultProjectName || null);
   const [scheduledDate, setScheduledDate] = useState<Date | undefined>(undefined);
+  const [priority, setPriority] = useState<TodoPriority>("normal");
   const [calendarOpen, setCalendarOpen] = useState(false);
   const [projectOpen, setProjectOpen] = useState(false);
   const [projectSearch, setProjectSearch] = useState("");
@@ -74,6 +76,7 @@ export function CreateTodoDialog({
         setBody(todo.body || "");
         setProjectName(todo.projectName || null);
         setScheduledDate(todo.scheduledDate ? new Date(todo.scheduledDate) : undefined);
+        setPriority(todo.priority ?? "normal");
       } else {
         // Reset for new todo
         // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -81,6 +84,7 @@ export function CreateTodoDialog({
         setBody("");
         setProjectName(defaultProjectName || null);
         setScheduledDate(new Date());
+        setPriority("normal");
       }
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setCalendarOpen(false);
@@ -108,6 +112,7 @@ export function CreateTodoDialog({
       } else {
         input.scheduledDate = null;
       }
+      input.priority = priority;
       onSubmit(input, todo.id);
     } else {
       // Build create input
@@ -118,6 +123,7 @@ export function CreateTodoDialog({
         const d = new Date(scheduledDate.getFullYear(), scheduledDate.getMonth(), scheduledDate.getDate());
         input.scheduledDate = d.toISOString();
       }
+      input.priority = priority;
       onSubmit(input);
     }
   };
@@ -174,6 +180,10 @@ export function CreateTodoDialog({
           </div>
         )}
         <div className="space-y-4">
+          <div className="space-y-2">
+            <Label className="text-base">Priority</Label>
+            <PrioritySelector value={priority} onChange={setPriority} />
+          </div>
           <div className="space-y-2">
             <Label className="text-base">Project</Label>
             <Popover open={projectOpen} onOpenChange={setProjectOpen} modal={false}>

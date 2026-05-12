@@ -1,3 +1,5 @@
+export type TodoPriority = "normal" | "medium" | "high";
+
 export interface Todo {
   id: string;
   title: string;
@@ -7,6 +9,7 @@ export interface Todo {
   scheduledDate?: string; // ISO datetime string
   agentId?: string;
   completed: boolean;
+  priority: TodoPriority;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +20,7 @@ export interface CreateTodoInput {
   documentLink?: string;
   projectName?: string;
   scheduledDate?: string;
+  priority?: TodoPriority;
 }
 
 export interface UpdateTodoInput {
@@ -26,6 +30,7 @@ export interface UpdateTodoInput {
   projectName?: string | null;
   scheduledDate?: string | null;
   completed?: boolean;
+  priority?: TodoPriority;
 }
 
 export interface TodoListFilter {
@@ -38,6 +43,7 @@ export interface TodoListFilter {
   scheduledBefore?: string;
   search?: string;
   agentId?: string;
+  priority?: TodoPriority;
   limit?: number;
   offset?: number;
 }

@@ -1,20 +1,30 @@
 import { useState, useEffect } from "react";
 import { ExcerptMarkdown } from "@/components/markdown/ExcerptMarkdown";
-import type { Todo } from "@/types/todos";
+import type { Todo, TodoPriority } from "@/types/todos";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquare } from "lucide-react";
+import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquare, Flag, Check as CheckIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { format, parseISO, addDays, startOfWeek, addWeeks } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { todosService } from "@/api/todosService";
 import { MobileBottomDrawer, MobileDrawerButton } from "@/components/mobile/MobileBottomDrawer";
+import { PriorityBadge } from "@/components/todos/PriorityBadge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const PRIORITY_OPTIONS: { value: TodoPriority; label: string }[] = [
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "normal", label: "Normal" },
+];
 
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -33,6 +43,17 @@ export function formatScheduledDate(dateStr: string): string {
     return format(date, "MMM d");
   } catch {
     return dateStr;
+  }
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function isScheduledToday(dateStr: string): boolean {
+  try {
+    const datePart = dateStr.split('T')[0];
+    const date = parseISO(datePart);
+    return format(date, "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd");
+  } catch {
+    return false;
   }
 }
 
@@ -66,6 +87,15 @@ export function TodoRow({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todos"] });
       queryClient.invalidateQueries({ queryKey: ["todos-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["project-todos"] });
+    },
+  });
+
+  const priorityMutation = useMutation({
+    mutationFn: (priority: TodoPriority) =>
+      todosService.updateTodo(todo.id, { priority }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todos"] });
       queryClient.invalidateQueries({ queryKey: ["project-todos"] });
     },
   });
@@ -130,7 +160,13 @@ export function TodoRow({
             </span>
           )}
           {todo.scheduledDate && (
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+            <span
+              className={`flex items-center gap-1 text-sm ${
+                isScheduledToday(todo.scheduledDate)
+                  ? "text-yellow-600 dark:text-yellow-500 font-medium"
+                  : "text-muted-foreground"
+              }`}
+            >
               <CalendarDays className="h-3.5 w-3.5" />
               {formatScheduledDate(todo.scheduledDate)}
             </span>
@@ -138,7 +174,8 @@ export function TodoRow({
         </div>
       </div>
       {(onDelete || onOpen) && (
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+          <PriorityBadge priority={todo.priority} />
           <button
             onClick={handleMoveToNextDay}
             disabled={moveMutation.isPending}
@@ -179,6 +216,27 @@ export function TodoRow({
                     Send to Agent
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuSeparator />
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Flag className="mr-2 h-4 w-4" />
+                    Priority
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    {PRIORITY_OPTIONS.map((opt) => (
+                      <DropdownMenuItem
+                        key={opt.value}
+                        onClick={() => priorityMutation.mutate(opt.value)}
+                        disabled={priorityMutation.isPending}
+                      >
+                        <CheckIcon
+                          className={`mr-2 h-4 w-4 ${todo.priority === opt.value ? "opacity-100" : "opacity-0"}`}
+                        />
+                        {opt.label}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleMoveToNextDay} disabled={moveMutation.isPending}>
                   <ChevronRight className="mr-2 h-4 w-4" />
@@ -252,6 +310,23 @@ export function TodoRow({
                 >
                   Move to next week
                 </MobileDrawerButton>
+                <div className="h-px bg-border mx-4 my-1" />
+                {PRIORITY_OPTIONS.map((opt) => (
+                  <MobileDrawerButton
+                    key={opt.value}
+                    onClick={() => {
+                      priorityMutation.mutate(opt.value);
+                      setMenuOpen(false);
+                    }}
+                    icon={
+                      todo.priority === opt.value
+                        ? <CheckIcon className="h-4 w-4" />
+                        : <Flag className="h-4 w-4" />
+                    }
+                  >
+                    Priority: {opt.label}
+                  </MobileDrawerButton>
+                ))}
                 {onDelete && (
                   <>
                     <div className="h-px bg-border mx-4 my-1" />

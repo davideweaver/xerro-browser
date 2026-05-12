@@ -41,6 +41,7 @@ class TodosService {
         params.append("scheduledBefore", filter.scheduledBefore);
       if (filter.search) params.append("search", filter.search);
       if (filter.agentId) params.append("agentId", filter.agentId);
+      if (filter.priority) params.append("priority", filter.priority);
       if (filter.limit !== undefined)
         params.append("limit", String(filter.limit));
       if (filter.offset !== undefined)

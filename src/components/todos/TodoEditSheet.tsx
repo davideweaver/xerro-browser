@@ -8,7 +8,7 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Markdown } from "tiptap-markdown";
 
-import type { Todo, UpdateTodoInput } from "@/types/todos";
+import type { Todo, TodoPriority, UpdateTodoInput } from "@/types/todos";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ContainerToolButton } from "@/components/container/ContainerToolButton";
 import { SidePanelHeader } from "@/components/shared/SidePanelHeader";
-import { formatScheduledDate } from "@/components/todos/TodoRow";
+import { formatScheduledDate, isScheduledToday } from "@/components/todos/TodoRow";
+import { PriorityBadge } from "@/components/todos/PriorityBadge";
 import {
   CalendarDays, Check, Loader2, FolderOpen, Bot,
   Bold, Italic, Underline as UnderlineIcon,
@@ -26,6 +27,12 @@ import {
   Undo2, Redo2, ClipboardPaste,
   Edit3, MessageSquare, ChevronDown,
 } from "lucide-react";
+
+const PRIORITY_OPTIONS: { value: TodoPriority; label: string }[] = [
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "normal", label: "Normal" },
+];
 
 const CustomTaskItem = TaskItem.extend({
   renderHTML({ node, HTMLAttributes }) {
@@ -358,17 +365,51 @@ export function TodoEditSheet({ todo, onClose, onSave, onOpenEditDialog, onSendT
                     )}
                     {saveState === "idle" && (
                       <>
+                        {/* Priority — clickable */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              type="button"
+                              className="rounded transition-opacity hover:opacity-80"
+                              title="Change priority"
+                            >
+                              <PriorityBadge priority={todo.priority} showNormal />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            {PRIORITY_OPTIONS.map((opt) => (
+                              <DropdownMenuItem
+                                key={opt.value}
+                                onClick={() => onSave(todo.id, { priority: opt.value })}
+                              >
+                                <Check
+                                  className={`mr-2 h-4 w-4 ${todo.priority === opt.value ? "opacity-100" : "opacity-0"}`}
+                                />
+                                {opt.label}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {/* Date */}
                         {todo.scheduledDate && (
-                          <span className="flex items-center gap-1">
-                            <CalendarDays className="h-3.5 w-3.5" />
-                            {formatScheduledDate(todo.scheduledDate)}
-                          </span>
+                          <>
+                            <span className="text-zinc-600">•</span>
+                            <span
+                              className={`flex items-center gap-1 ${
+                                isScheduledToday(todo.scheduledDate)
+                                  ? "text-yellow-600 dark:text-yellow-500 font-medium"
+                                  : ""
+                              }`}
+                            >
+                              <CalendarDays className="h-3.5 w-3.5" />
+                              {formatScheduledDate(todo.scheduledDate)}
+                            </span>
+                          </>
                         )}
                         {/* Project name */}
                         {todo.projectName && (
                           <>
-                            {todo.scheduledDate && <span className="text-zinc-600">•</span>}
+                            <span className="text-zinc-600">•</span>
                             <span className="flex items-center gap-1">
                               {todo.agentId
                                 ? <Bot className="h-3.5 w-3.5" />
