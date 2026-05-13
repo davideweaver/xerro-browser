@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsTouchDevice } from "@/hooks/use-is-touch-device";
 import type { MessageThread, Message } from "@/types/messages";
 
 interface MessageThreadCardProps {
@@ -27,6 +28,7 @@ function isThreadCard(props: MessageCardProps): props is MessageThreadCardProps 
 
 export function MessageCard(props: MessageCardProps) {
   const isMobile = useIsMobile();
+  const isTouch = useIsTouchDevice();
   const { isActive, onClick, onDelete } = props;
 
   let subject: string;
@@ -64,10 +66,9 @@ export function MessageCard(props: MessageCardProps) {
       className={cn(
         "flex items-start px-3 py-3 rounded-lg group cursor-pointer select-none transition-none",
         "[-webkit-tap-highlight-color:transparent]",
-        "[@media(any-pointer:coarse)]:active:bg-transparent [@media(any-pointer:coarse)]:hover:bg-transparent",
         isActive
           ? "bg-accent text-accent-foreground dark:bg-accent/60"
-          : "hover:bg-accent/50"
+          : isTouch ? "" : "hover:bg-accent/50"
       )}
       onClick={onClick}
     >

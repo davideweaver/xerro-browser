@@ -4,6 +4,7 @@ import type { Todo, TodoPriority } from "@/types/todos";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquare, Flag, Check as CheckIcon } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsTouchDevice } from "@/hooks/use-is-touch-device";
 import { format, parseISO, addDays, startOfWeek, addWeeks } from "date-fns";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { todosService } from "@/api/todosService";
@@ -77,6 +78,7 @@ export function TodoRow({
   showProject = false,
 }: TodoRowProps) {
   const isMobile = useIsMobile();
+  const isTouch = useIsTouchDevice();
   const [optimisticCompleted, setOptimisticCompleted] = useState(todo.completed);
   const [menuOpen, setMenuOpen] = useState(false);
   const queryClient = useQueryClient();
@@ -125,7 +127,7 @@ export function TodoRow({
 
   return (
     <div
-      className={`group flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-accent/30 -mx-4 select-none transition-none [-webkit-tap-highlight-color:transparent] [@media(any-pointer:coarse)]:active:bg-transparent [@media(any-pointer:coarse)]:hover:bg-transparent ${onOpen ? "cursor-pointer" : ""}`}
+      className={`group flex items-start gap-3 px-4 py-3 rounded-lg ${isTouch ? "" : "hover:bg-accent/30"} -mx-4 select-none transition-none [-webkit-tap-highlight-color:transparent] ${onOpen ? "cursor-pointer" : ""}`}
       onClick={() => onOpen?.(todo)}
     >
       <div onClick={(e) => e.stopPropagation()}>
