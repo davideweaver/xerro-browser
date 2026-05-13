@@ -125,7 +125,7 @@ export function TodoRow({
 
   return (
     <div
-      className={`group flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-accent/30 transition-colors -mx-4 ${onOpen ? "cursor-pointer" : ""}`}
+      className={`group flex items-start gap-3 px-4 py-3 rounded-lg hover:bg-accent/30 -mx-4 select-none transition-none [-webkit-tap-highlight-color:transparent] [@media(pointer:coarse)]:active:bg-transparent [@media(pointer:coarse)]:hover:bg-transparent ${onOpen ? "cursor-pointer" : ""}`}
       onClick={() => onOpen?.(todo)}
     >
       <div onClick={(e) => e.stopPropagation()}>

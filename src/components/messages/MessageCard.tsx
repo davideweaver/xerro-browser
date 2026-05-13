@@ -62,7 +62,9 @@ export function MessageCard(props: MessageCardProps) {
   return (
     <div
       className={cn(
-        "flex items-start px-3 py-3 rounded-lg group transition-colors cursor-pointer",
+        "flex items-start px-3 py-3 rounded-lg group cursor-pointer select-none transition-none",
+        "[-webkit-tap-highlight-color:transparent]",
+        "[@media(pointer:coarse)]:active:bg-transparent [@media(pointer:coarse)]:hover:bg-transparent",
         isActive
           ? "bg-accent text-accent-foreground dark:bg-accent/60"
           : "hover:bg-accent/50"
