@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { useIsStandalone } from "@/hooks/use-is-standalone";
+import { StandaloneNavBar } from "@/components/navigation/StandaloneNavBar";
 
 interface SecondaryNavContainerProps {
   title: string;
@@ -13,6 +15,8 @@ export function SecondaryNavContainer({
   tools,
   children,
 }: SecondaryNavContainerProps) {
+  const isStandalone = useIsStandalone();
+
   return (
     <nav className="w-full md:w-[380px] bg-card flex flex-col min-w-0 md:pt-[17px]">
       {/* Header */}
@@ -31,6 +35,9 @@ export function SecondaryNavContainer({
 
       {/* Scrollable Content Area */}
       <div className="flex-1 overflow-auto">{children}</div>
+
+      {/* PWA-only browser navigation controls */}
+      {isStandalone && <StandaloneNavBar />}
     </nav>
   );
 }
