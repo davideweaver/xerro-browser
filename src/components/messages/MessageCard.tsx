@@ -64,7 +64,7 @@ export function MessageCard(props: MessageCardProps) {
       className={cn(
         "flex items-start px-3 py-3 rounded-lg group cursor-pointer select-none transition-none",
         "[-webkit-tap-highlight-color:transparent]",
-        "[@media(pointer:coarse)]:active:bg-transparent [@media(pointer:coarse)]:hover:bg-transparent",
+        "[@media(any-pointer:coarse)]:active:bg-transparent [@media(any-pointer:coarse)]:hover:bg-transparent",
         isActive
           ? "bg-accent text-accent-foreground dark:bg-accent/60"
           : "hover:bg-accent/50"
