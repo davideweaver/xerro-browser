@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { ExcerptMarkdown } from "@/components/markdown/ExcerptMarkdown";
 import type { Todo, TodoPriority } from "@/types/todos";
 import { Checkbox } from "@/components/ui/checkbox";
-import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquare, Flag, Check as CheckIcon } from "lucide-react";
+import { CalendarDays, FolderOpen, Bot, MoreHorizontal, PanelRight, ArrowDown, ChevronRight, ChevronsRight, Trash2, MessageSquare, Flag, Check as CheckIcon, Pencil } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useIsTouchDevice } from "@/hooks/use-is-touch-device";
 import { format, parseISO, addDays, startOfWeek, addWeeks } from "date-fns";
@@ -63,6 +63,7 @@ interface TodoRowProps {
   onToggle: (id: string, completed: boolean) => void;
   onDelete?: () => void;
   onOpen?: (todo: Todo) => void;
+  onEdit?: (todo: Todo) => void;
   onSendToChat?: (todo: Todo) => void;
   onSendToAgent?: (todo: Todo) => void;
   showProject?: boolean;
@@ -73,6 +74,7 @@ export function TodoRow({
   onToggle,
   onDelete,
   onOpen,
+  onEdit,
   onSendToChat,
   onSendToAgent,
   showProject = false,
@@ -205,7 +207,13 @@ export function TodoRow({
                     Details
                   </DropdownMenuItem>
                 )}
-                {onOpen && <DropdownMenuSeparator />}
+                {onEdit && (
+                  <DropdownMenuItem onClick={() => onEdit(todo)}>
+                    <Pencil className="mr-2 h-4 w-4" />
+                    Edit…
+                  </DropdownMenuItem>
+                )}
+                {(onOpen || onEdit) && <DropdownMenuSeparator />}
                 {onSendToChat && (
                   <DropdownMenuItem onClick={() => onSendToChat(todo)}>
                     <MessageSquare className="mr-2 h-4 w-4" />
@@ -282,7 +290,15 @@ export function TodoRow({
                     Details
                   </MobileDrawerButton>
                 )}
-                {onOpen && <div className="h-px bg-border mx-4 my-1" />}
+                {onEdit && (
+                  <MobileDrawerButton
+                    onClick={() => { setMenuOpen(false); onEdit(todo); }}
+                    icon={<Pencil className="h-4 w-4" />}
+                  >
+                    Edit…
+                  </MobileDrawerButton>
+                )}
+                {(onOpen || onEdit) && <div className="h-px bg-border mx-4 my-1" />}
                 {onSendToChat && (
                   <MobileDrawerButton
                     onClick={() => { setMenuOpen(false); onSendToChat(todo); }}

@@ -384,6 +384,7 @@ export default function ProjectDetail() {
                       onToggle={(id, completed) => toggleTodoMutation.mutate({ id, completed })}
                       onDelete={() => confirmDeleteTodo(todo)}
                       onOpen={setEditTodo}
+                      onEdit={(todo) => { setTodoToEdit(todo); setEditDialogOpen(true); }}
                     />
                   ))}
                 </div>

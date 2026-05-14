@@ -363,6 +363,7 @@ export default function Todos() {
                           }
                           onDelete={() => confirmDelete(todo)}
                           onOpen={setEditTodo}
+                          onEdit={(todo) => { setTodoToEdit(todo); setEditDialogOpen(true); }}
                           onSendToChat={(todo) => setChatAboutTodo(todo)}
                           onSendToAgent={setComposeForTodo}
                         />
@@ -385,6 +386,7 @@ export default function Todos() {
                 }
                 onDelete={() => confirmDelete(todo)}
                 onOpen={setEditTodo}
+                onEdit={(todo) => { setTodoToEdit(todo); setEditDialogOpen(true); }}
                 onSendToChat={(todo) => setChatAboutTodo(todo)}
                 onSendToAgent={setComposeForTodo}
               />
