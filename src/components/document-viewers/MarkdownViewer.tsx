@@ -4,6 +4,7 @@ import remarkBreaks from "remark-breaks";
 import remarkWikiLinks from "@/lib/remarkWikiLinks";
 import { preprocessNestedCodeBlocks } from "@/lib/remarkNestedCodeBlocks";
 import { MarkdownLink } from "@/components/markdown/MarkdownLink";
+import { MarkdownImage } from "@/components/markdown/MarkdownImage";
 import type { Components } from "react-markdown";
 import { useMemo } from "react";
 
@@ -27,6 +28,13 @@ export function MarkdownViewer({ content, documentPath }: MarkdownViewerProps) {
       <MarkdownLink href={href} currentDocumentPath={documentPath} {...props}>
         {children}
       </MarkdownLink>
+    ),
+    img: ({ src, alt }) => (
+      <MarkdownImage
+        src={typeof src === "string" ? src : undefined}
+        alt={alt}
+        currentDocumentPath={documentPath}
+      />
     ),
   };
 

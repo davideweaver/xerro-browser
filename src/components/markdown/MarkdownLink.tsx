@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { resolveDocumentPath } from "@/lib/resolveDocumentPath";
 
 interface MarkdownLinkProps {
   href?: string;
@@ -35,36 +36,7 @@ export function MarkdownLink({
       !href.startsWith("mailto:"));
 
   if (isInternalLink) {
-    // Keep the full path including .md extension for routing
-    let linkPath = href;
-
-    // Handle path resolution (only if currentDocumentPath is provided)
-    if (currentDocumentPath) {
-      if (linkPath.startsWith("/")) {
-        // Remove leading slash for absolute paths
-        linkPath = linkPath.substring(1);
-      } else if (!linkPath.startsWith("/")) {
-        // This is a relative path, resolve it relative to current directory
-        const currentDir = currentDocumentPath.split("/").slice(0, -1).join("/");
-
-        // Resolve relative path
-        const pathSegments = currentDir ? currentDir.split("/") : [];
-        const linkSegments = linkPath.split("/");
-
-        for (const segment of linkSegments) {
-          if (segment === "..") {
-            pathSegments.pop();
-          } else if (segment !== ".") {
-            pathSegments.push(segment);
-          }
-        }
-
-        linkPath = pathSegments.join("/");
-      }
-    } else if (linkPath.startsWith("/")) {
-      // Remove leading slash for absolute paths
-      linkPath = linkPath.substring(1);
-    }
+    const linkPath = resolveDocumentPath(href, currentDocumentPath);
 
     // Navigate to the document
     return (
