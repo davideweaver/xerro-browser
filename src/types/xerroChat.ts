@@ -44,14 +44,24 @@ export type XerroMessageContentBlock =
   | { type: 'text'; text: string }
   | { type: 'tool_use'; toolName: string; toolCallId: string; parentToolUseId?: string | null; toolInput?: string; toolResult?: string; isToolError?: boolean };
 
+export interface XerroChatAttachment {
+  id: string;
+  filename: string;
+  path: string;
+  mimetype: string;
+  size: number;
+  isImage: boolean;
+  uploadedAt: string;
+}
+
 export interface XerroChatMessage {
   id: string;
   sessionId: string;
   role: 'user' | 'assistant';
   content: string;
   createdAt: string;
+  attachments?: XerroChatAttachment[];
   metadata?: {
-    attachedImages?: string[];    // base64 data URLs for inline image preview (user messages)
     durationMs?: number;
     costUsd?: number;
     toolCallCount?: number;

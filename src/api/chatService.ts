@@ -104,13 +104,16 @@ class ChatService {
     }
   }
 
+  getAttachmentUrl(sessionId: string, attachmentId: string): string {
+    return `${this.baseUrl}/sessions/${sessionId}/attachments/${attachmentId}`;
+  }
+
   async sendMessage(
     sessionId: string,
     content: string,
     signal: AbortSignal,
     planMode?: boolean,
-    files?: File[],
-    attachedImages?: string[]
+    files?: File[]
   ): Promise<ReadableStreamDefaultReader<Uint8Array>> {
     let body: BodyInit;
     let headers: Record<string, string> = {};
@@ -121,9 +124,6 @@ class ChatService {
       if (planMode) formData.append("planMode", "true");
       for (const file of files) {
         formData.append("files", file);
-      }
-      if (attachedImages && attachedImages.length > 0) {
-        formData.append("imageData", JSON.stringify(attachedImages));
       }
       body = formData;
       // Don't set Content-Type — browser sets it with boundary

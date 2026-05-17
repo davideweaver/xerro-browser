@@ -16,6 +16,7 @@ import { SlashCommandPicker } from "@/components/chat-sessions/SlashCommandPicke
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import ClickableImage from "@/components/chat/ClickableImage";
+import AuthenticatedClickableImage from "@/components/chat/AuthenticatedClickableImage";
 import {
   Settings,
   Trash2,
@@ -93,6 +94,15 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete, title:
   const [optimisticUserMsg, setOptimisticUserMsg] = useState<string | null>(null);
   const [optimisticIsPlanMode, setOptimisticIsPlanMode] = useState(false);
   const [optimisticAttachedImages, setOptimisticAttachedImages] = useState<string[]>([]);
+
+  // Revoke optimistic blob: URLs once they're no longer shown
+  useEffect(() => {
+    return () => {
+      for (const url of optimisticAttachedImages) {
+        if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+      }
+    };
+  }, [optimisticAttachedImages]);
   // Tracks which sessionId the current streaming state belongs to.
   // Prevents tool calls from one session appearing in another when navigating.
   const [streamingSessionId, setStreamingSessionId] = useState<string | null>(null);
@@ -299,6 +309,7 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete, title:
     setStreamingExecutionId(null);
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
+    setOptimisticAttachedImages([]);
 
     // Pre-lock: prevents the window where input is unlocked before the fetch resolves
     setIsReconnecting(true);
@@ -515,6 +526,7 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete, title:
     setStreamingEvents([]);
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
+    setOptimisticAttachedImages([]);
 
     await queryClient.refetchQueries({ queryKey: ["chat-messages", sessionId] });
 
@@ -538,6 +550,7 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete, title:
     setStreamingExecutionId(null);
     setStreamingSessionId(null);
     setOptimisticUserMsg(null);
+    setOptimisticAttachedImages([]);
     setStreamingEvents([]);
     toast.error(`Chat error: ${error}`);
   }, []);
@@ -603,18 +616,12 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete, title:
 
     const filesToSend = [...attachedFiles];
 
-    // Convert image files to base64 data URLs for inline preview
-    const imageFiles = filesToSend.filter((f) => f.type.startsWith("image/"));
-    const base64Images = await Promise.all(
-      imageFiles.map(
-        (f) =>
-          new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.readAsDataURL(f);
-          })
-      )
-    );
+    // Build object URLs for image previews shown in the optimistic message.
+    // These are revoked when the optimistic state clears (see useEffect on
+    // optimisticAttachedImages) so they don't leak.
+    const previewUrls = filesToSend
+      .filter((f) => f.type.startsWith("image/"))
+      .map((f) => URL.createObjectURL(f));
 
     setPlanReady(false);
     setInput("");
@@ -623,15 +630,14 @@ export default function ChatSession({ sessionId: sessionIdProp, onDelete, title:
     setStreamingSessionId(sessionId);
     setOptimisticUserMsg(content);
     setOptimisticIsPlanMode(planMode);
-    setOptimisticAttachedImages(base64Images);
+    setOptimisticAttachedImages(previewUrls);
     setStreamingEvents([]);
     scrollToBottom();
 
     await sendMessage(
       content,
       planMode,
-      filesToSend.length > 0 ? filesToSend : undefined,
-      base64Images.length > 0 ? base64Images : undefined
+      filesToSend.length > 0 ? filesToSend : undefined
     );
   };
 
@@ -1076,14 +1082,19 @@ function MessageBubble({ message }: { message: XerroChatMessage }) {
   const timestamp = format(new Date(message.createdAt), "h:mm a");
 
   if (isUser) {
-    const attachedImages = message.metadata?.attachedImages;
+    const imageAttachments = message.attachments?.filter((a) => a.isImage) ?? [];
     return (
       <div className="bg-accent/40 px-4 py-2.5 rounded-md">
         <div className="whitespace-pre-wrap">{message.content}</div>
-        {attachedImages && attachedImages.length > 0 && (
+        {imageAttachments.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-2">
-            {attachedImages.map((src, i) => (
-              <ClickableImage key={i} src={src} alt={`attached image ${i + 1}`} className="max-h-20 max-w-[120px] rounded object-contain cursor-zoom-in" />
+            {imageAttachments.map((att) => (
+              <AuthenticatedClickableImage
+                key={att.id}
+                url={chatService.getAttachmentUrl(message.sessionId, att.id)}
+                alt={att.filename}
+                className="max-h-20 max-w-[120px] rounded object-contain cursor-zoom-in"
+              />
             ))}
           </div>
         )}
