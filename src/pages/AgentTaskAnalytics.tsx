@@ -33,6 +33,8 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  BarChart,
+  Bar,
 } from "recharts";
 import type { AnalyticsWindow } from "@/types/analytics";
 import { cn } from "@/lib/utils";
@@ -213,6 +215,70 @@ function TimeseriesChart({
   );
 }
 
+function CostByAgentChart({
+  data,
+}: {
+  data: { name: string; cost: number }[];
+}) {
+  const config = { cost: { label: "Cost", color: "#06b6d4" } };
+  const height = Math.max(140, data.length * 32 + 40);
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+          Cost by Agent<EstLabel />
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {data.length === 0 ? (
+          <div className="h-[140px] flex items-center justify-center text-sm text-muted-foreground">
+            No data
+          </div>
+        ) : (
+          <ChartContainer config={config} style={{ height }} className="w-full">
+            <BarChart
+              data={data}
+              layout="vertical"
+              margin={{ top: 4, right: 24, left: 0, bottom: 0 }}
+            >
+              <CartesianGrid
+                horizontal={false}
+                strokeDasharray="3 3"
+                stroke="hsl(var(--border))"
+                opacity={0.5}
+              />
+              <XAxis
+                type="number"
+                tickFormatter={(v) => `$${Number(v).toFixed(2)}`}
+                tick={{ fontSize: 10 }}
+                tickLine={false}
+                axisLine={false}
+              />
+              <YAxis
+                type="category"
+                dataKey="name"
+                tick={{ fontSize: 11 }}
+                tickLine={false}
+                axisLine={false}
+                width={140}
+              />
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    formatter={(value) => [formatCost(Number(value)), "Cost"]}
+                  />
+                }
+              />
+              <Bar dataKey="cost" fill="#06b6d4" radius={[0, 4, 4, 0]} />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 const WINDOWS: { value: AnalyticsWindow; label: string }[] = [
@@ -261,6 +327,22 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
     queryKey: ["analytics-ts-cost", selectedWindow, agentId ?? "all"],
     queryFn: () => analyticsService.getTimeseries("cost", selectedWindow, agentId),
   });
+
+  const { data: costByAgent, isLoading: costByAgentLoading } = useQuery({
+    queryKey: ["analytics-cost-by-agent", selectedWindow],
+    queryFn: () => analyticsService.getCostByAgent(selectedWindow),
+    enabled: !lockedAgentId,
+  });
+
+  const workspaceAgentMap = new Map(
+    (agentsData?.agents ?? []).map((a) => [a.id, a.name])
+  );
+  const costByAgentChartData = (costByAgent ?? [])
+    .filter((c) => workspaceAgentMap.has(c.agentId) && c.totalCostUsd > 0)
+    .map((c) => ({
+      name: workspaceAgentMap.get(c.agentId) ?? c.agentId,
+      cost: c.totalCostUsd,
+    }));
 
   const perf = summary?.performance;
   const tools = summary?.tools ?? [];
@@ -364,6 +446,17 @@ export function AnalyticsDashboard({ lockedAgentId }: AnalyticsDashboardProps = 
           />
         )}
       </div>
+
+      {/* Cost by Agent — hidden when dashboard is locked to a single agent */}
+      {!lockedAgentId && (
+        <div className="mb-6">
+          {costByAgentLoading ? (
+            <ChartSkeleton title="Cost by Agent" />
+          ) : (
+            <CostByAgentChart data={costByAgentChartData} />
+          )}
+        </div>
+      )}
 
       {/* Tools Table */}
       <div className="mb-6">

@@ -3,6 +3,7 @@ import { toast } from "@/hooks/use-toast";
 import type {
   AnalyticsSummary,
   AnalyticsWindow,
+  CostByAgent,
   TimeSeriesPoint,
   TimeseriesMetric,
 } from "@/types/analytics";
@@ -23,6 +24,19 @@ class AnalyticsService {
       return await response.json();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to fetch analytics";
+      toast({ title: "Error", description: message, variant: "destructive" });
+      throw error;
+    }
+  }
+
+  async getCostByAgent(window: AnalyticsWindow): Promise<CostByAgent[]> {
+    try {
+      const params = new URLSearchParams({ window });
+      const response = await apiFetch(`${this.baseUrl}/api/v1/analytics/cost-by-agent?${params}`);
+      if (!response.ok) throw new Error(`Failed to fetch cost by agent: ${response.statusText}`);
+      return await response.json();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to fetch cost by agent";
       toast({ title: "Error", description: message, variant: "destructive" });
       throw error;
     }

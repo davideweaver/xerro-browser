@@ -47,3 +47,10 @@ export interface TimeSeriesPoint {
   timestamp: number;
   value: number;
 }
+
+export interface CostByAgent {
+  agentId: string;
+  totalCostUsd: number;
+  requests: number;
+  errors: number;
+}
