@@ -247,6 +247,7 @@ export default function Sessions() {
     const src = session.externalSource;
     if (!src) return "other";
     if (src === "claude-code") return "claude-code";
+    if (src === "pi") return "pi";
     if (src.startsWith("scheduled-task")) return "scheduled-agent";
     if (src === "trigger") return "trigger";
     if (src === "slack-bot") return "slack";
@@ -316,6 +317,7 @@ export default function Sessions() {
           <SelectItem value="all">All Sources</SelectItem>
           <SelectItem value="claude-code">Claude Code</SelectItem>
           <SelectItem value="chat">Chat</SelectItem>
+          <SelectItem value="pi">Pi</SelectItem>
           <SelectItem value="scheduled-agent">Scheduled Agent</SelectItem>
           <SelectItem value="trigger">Trigger</SelectItem>
           <SelectItem value="slack">Slack</SelectItem>
