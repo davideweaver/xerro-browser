@@ -289,6 +289,22 @@ export interface WorkspaceFolderMovedPayload {
   timestamp: string;
 }
 
+export interface BrowsingVisitsSyncedEvent {
+  peer: string;
+  added: number;
+  skipped: number;
+  timestamp: string;
+}
+
+export interface BrowsingTopicsUpdatedEvent {
+  count: number;
+  timestamp: string;
+}
+
+export interface BrowsingInterestsUpdatedEvent {
+  timestamp: string;
+}
+
 export interface XerroWebSocketEvents {
   'events:list': (events: string[]) => void;
   'scheduled-tasks:agent-status': (data: AgentStatusEvent) => void;

@@ -6,6 +6,7 @@ import { useUnreadMessageCount } from "@/hooks/use-unread-message-count";
 import { useDocumentQueryUpdates } from "@/hooks/use-document-query-updates";
 import { useMemoryQueryUpdates } from "@/hooks/use-memory-query-updates";
 import { useAgentQueryUpdates } from "@/hooks/use-agent-query-updates";
+import { useBrowsingQueryUpdates } from "@/hooks/use-browsing-query-updates";
 import { useXerroWebSocketContext } from "@/context/XerroWebSocketContext";
 import { WifiOff } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -46,6 +47,7 @@ const Layout = () => {
   useDocumentQueryUpdates();
   useMemoryQueryUpdates();
   useAgentQueryUpdates();
+  useBrowsingQueryUpdates();
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [currentFolderPath, setCurrentFolderPath] = useState<string>(() =>
     getCurrentFolderPath()

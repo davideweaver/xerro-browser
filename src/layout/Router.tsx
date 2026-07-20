@@ -59,6 +59,16 @@ const Router = createBrowserRouter(
         lazy={lazyImportComponent(() => import("@/pages/DocumentDetail"))}
       />
 
+      <Route path="/browsing" element={<Navigate to="/browsing/timeline" replace />} />
+      <Route
+        path="/browsing/timeline"
+        lazy={lazyImportComponent(() => import("@/pages/BrowsingTimeline"))}
+      />
+      <Route
+        path="/browsing/interests"
+        lazy={lazyImportComponent(() => import("@/pages/BrowsingInterests"))}
+      />
+
       {/* Memory overview */}
       <Route
         path="/memory/overview"

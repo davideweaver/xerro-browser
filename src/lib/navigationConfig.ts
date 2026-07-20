@@ -10,6 +10,8 @@ import {
   BookMarked,
   MessagesSquare,
   Inbox,
+  Compass,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -73,6 +75,16 @@ export const navigationConfig: PrimaryNavItem[] = [
     secondaryItems: []
   },
   {
+    key: 'browsing',
+    icon: Compass,
+    label: 'Browsing',
+    defaultPath: '/browsing/timeline',
+    secondaryItems: [
+      { path: '/browsing/timeline', icon: Clock, label: 'Timeline' },
+      { path: '/browsing/interests', icon: Sparkles, label: 'Interests' }
+    ]
+  },
+  {
     key: 'memory',
     icon: Brain,
     label: 'Memory',
@@ -98,6 +110,7 @@ export function getActivePrimary(pathname: string): string | null {
   // Project routes - including project-specific sessions
   if (pathname.startsWith('/projects') || pathname.startsWith('/project/')) return 'projects';
   if (pathname.startsWith('/documents')) return 'documents';
+  if (pathname.startsWith('/browsing')) return 'browsing';
   // Memory routes
   if (pathname.startsWith('/memory')) return 'memory';
   // Todos routes

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
-import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent, AgentConfigPayload, AgentDeletedPayload, WorkspaceFilePayload, WorkspaceFileMovedPayload, WorkspaceFolderPayload, WorkspaceFolderMovedPayload, TriggerConfigEvent, TriggerDeletedEvent } from '@/types/websocket';
+import type { AgentStatusEvent, DocumentChangeEvent, TaskConfigEvent, BookmarkChangeEvent, TodoChangeEvent, MemorySessionPayload, MemorySessionDeletedPayload, MemoryProjectPayload, FeedTopicEvent, FeedTopicDeletedEvent, FeedItemEvent, FeedItemDeletedEvent, AgentConfigPayload, AgentDeletedPayload, WorkspaceFilePayload, WorkspaceFileMovedPayload, WorkspaceFolderPayload, WorkspaceFolderMovedPayload, TriggerConfigEvent, TriggerDeletedEvent, BrowsingVisitsSyncedEvent, BrowsingTopicsUpdatedEvent, BrowsingInterestsUpdatedEvent } from '@/types/websocket';
 import type { NotificationCreatedEvent, NotificationReadEvent, NotificationsReadAllEvent, NotificationDeletedEvent } from '@/types/notifications';
 import type { MessageCreatedEvent, MessageUpdatedEvent, MessageDeletedEvent, ThreadDeletedEvent } from '@/types/messages';
 
@@ -50,6 +50,9 @@ interface XerroWebSocketContextValue {
   subscribeToTriggerCreated: (callback: (event: TriggerConfigEvent) => void) => () => void;
   subscribeToTriggerUpdated: (callback: (event: TriggerConfigEvent) => void) => () => void;
   subscribeToTriggerDeleted: (callback: (event: TriggerDeletedEvent) => void) => () => void;
+  subscribeToBrowsingVisitsSynced: (callback: (event: BrowsingVisitsSyncedEvent) => void) => () => void;
+  subscribeToBrowsingTopicsUpdated: (callback: (event: BrowsingTopicsUpdatedEvent) => void) => () => void;
+  subscribeToBrowsingInterestsUpdated: (callback: (event: BrowsingInterestsUpdatedEvent) => void) => () => void;
 }
 
 const XerroWebSocketContext = createContext<XerroWebSocketContextValue | undefined>(undefined);
@@ -103,6 +106,9 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
   const triggerCreatedCallbacksRef = useRef<Set<(event: TriggerConfigEvent) => void>>(new Set());
   const triggerUpdatedCallbacksRef = useRef<Set<(event: TriggerConfigEvent) => void>>(new Set());
   const triggerDeletedCallbacksRef = useRef<Set<(event: TriggerDeletedEvent) => void>>(new Set());
+  const browsingVisitsSyncedCallbacksRef = useRef<Set<(event: BrowsingVisitsSyncedEvent) => void>>(new Set());
+  const browsingTopicsUpdatedCallbacksRef = useRef<Set<(event: BrowsingTopicsUpdatedEvent) => void>>(new Set());
+  const browsingInterestsUpdatedCallbacksRef = useRef<Set<(event: BrowsingInterestsUpdatedEvent) => void>>(new Set());
 
   // Track last processed bookmark event to prevent duplicate processing
   const lastBookmarkEventTimestampRef = useRef<string>('');
@@ -592,12 +598,53 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
       });
     });
 
+    // Browsing history events
+    socket.on('browsing-history:visits-synced', (data: BrowsingVisitsSyncedEvent) => {
+      browsingVisitsSyncedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in browsing visits-synced callback:', error);
+        }
+      });
+    });
+
+    socket.on('browsing-history:topics-updated', (data: BrowsingTopicsUpdatedEvent) => {
+      browsingTopicsUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in browsing topics-updated callback:', error);
+        }
+      });
+    });
+
+    socket.on('browsing-history:interests-updated', (data: BrowsingInterestsUpdatedEvent) => {
+      browsingInterestsUpdatedCallbacksRef.current.forEach(callback => {
+        try { callback(data); } catch (error) {
+          console.error('[Xerro WebSocket] Error in browsing interests-updated callback:', error);
+        }
+      });
+    });
+
     // Cleanup on unmount
     return () => {
       socket.close();
       socketRef.current = null;
       setIsConnected(false);
     };
+  }, []);
+
+  // Subscribe to browsing history events
+  const subscribeToBrowsingVisitsSynced = useCallback((callback: (event: BrowsingVisitsSyncedEvent) => void) => {
+    browsingVisitsSyncedCallbacksRef.current.add(callback);
+    return () => { browsingVisitsSyncedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToBrowsingTopicsUpdated = useCallback((callback: (event: BrowsingTopicsUpdatedEvent) => void) => {
+    browsingTopicsUpdatedCallbacksRef.current.add(callback);
+    return () => { browsingTopicsUpdatedCallbacksRef.current.delete(callback); };
+  }, []);
+
+  const subscribeToBrowsingInterestsUpdated = useCallback((callback: (event: BrowsingInterestsUpdatedEvent) => void) => {
+    browsingInterestsUpdatedCallbacksRef.current.add(callback);
+    return () => { browsingInterestsUpdatedCallbacksRef.current.delete(callback); };
   }, []);
 
   // Subscribe to agent status events
@@ -899,6 +946,9 @@ export function XerroWebSocketProvider({ children }: { children: React.ReactNode
     subscribeToTriggerCreated,
     subscribeToTriggerUpdated,
     subscribeToTriggerDeleted,
+    subscribeToBrowsingVisitsSynced,
+    subscribeToBrowsingTopicsUpdated,
+    subscribeToBrowsingInterestsUpdated,
   };
 
   return (
