@@ -102,6 +102,14 @@ const Router = createBrowserRouter(
         path="/memory/sessions/:sessionId"
         lazy={lazyImportComponent(() => import("@/pages/XerroSessionDetail"))}
       />
+      <Route
+        path="/memory/journal"
+        lazy={lazyImportComponent(() => import("@/pages/Journal"))}
+      />
+      <Route
+        path="/memory/journal/*"
+        lazy={lazyImportComponent(() => import("@/pages/JournalDetail"))}
+      />
 
       {/* Chat routes */}
       <Route

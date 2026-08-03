@@ -6,7 +6,7 @@ import { SecondaryNavItem } from "@/components/navigation/SecondaryNavItem";
 import { SecondaryNavItemTitle } from "@/components/navigation/SecondaryNavItemContent";
 import { SecondaryNavContainer } from "@/components/navigation/SecondaryNavContainer";
 import { SecondaryNavToolButton } from "@/components/navigation/SecondaryNavToolButton";
-import { ChevronLeft, Folder, FileText, RefreshCw, Search, History, LayoutDashboard, Brain } from "lucide-react";
+import { ChevronLeft, Folder, FileText, RefreshCw, Search, History, LayoutDashboard, Brain, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
 interface MemoryBlocksSecondaryNavProps {
@@ -28,6 +28,7 @@ export function MemoryBlocksSecondaryNav({
   const isOverviewActive = pathname.startsWith("/memory/overview");
   const isSystemActive = pathname.startsWith("/memory/system");
   const isSessionsActive = pathname.startsWith("/memory/sessions");
+  const isJournalActive = pathname.startsWith("/memory/journal");
   const isRoot = !currentFolder;
 
   const { data: referenceData, isLoading: referenceLoading, refetch: refetchReference } = useQuery({
@@ -166,6 +167,13 @@ export function MemoryBlocksSecondaryNav({
           >
             <History className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
             <SecondaryNavItemTitle>Sessions</SecondaryNavItemTitle>
+          </SecondaryNavItem>
+          <SecondaryNavItem
+            isActive={isJournalActive}
+            onClick={() => handleNavigate("/memory/journal")}
+          >
+            <BookOpen className="h-4 w-4 mr-3 flex-shrink-0 text-muted-foreground" />
+            <SecondaryNavItemTitle>Journal</SecondaryNavItemTitle>
           </SecondaryNavItem>
         </div>
       </div>

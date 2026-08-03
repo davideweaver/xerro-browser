@@ -10,6 +10,7 @@ import {
   Plus,
   ArrowRight,
   GitBranch,
+  BookOpen,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -53,6 +54,13 @@ const QUICK_LINKS = [
     label: "Blocks",
     description: "Manage memory blocks",
     color: "text-indigo-500",
+  },
+  {
+    path: "/memory/journal",
+    icon: BookOpen,
+    label: "Journal",
+    description: "Daily synthesized narratives",
+    color: "text-emerald-500",
   },
 ];
 
