@@ -249,6 +249,7 @@ export default function Sessions() {
     if (src === "claude-code") return "claude-code";
     if (src === "pi") return "pi";
     if (src === "cursor") return "cursor";
+    if (src === "omp") return "omp";
     if (src.startsWith("scheduled-task")) return "scheduled-agent";
     if (src === "trigger") return "trigger";
     if (src === "slack-bot") return "slack";
@@ -320,6 +321,7 @@ export default function Sessions() {
           <SelectItem value="chat">Chat</SelectItem>
           <SelectItem value="pi">Pi</SelectItem>
           <SelectItem value="cursor">Cursor</SelectItem>
+          <SelectItem value="omp">OMP</SelectItem>
           <SelectItem value="scheduled-agent">Scheduled Agent</SelectItem>
           <SelectItem value="trigger">Trigger</SelectItem>
           <SelectItem value="slack">Slack</SelectItem>
