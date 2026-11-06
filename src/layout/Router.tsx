@@ -111,6 +111,12 @@ const Router = createBrowserRouter(
         lazy={lazyImportComponent(() => import("@/pages/JournalDetail"))}
       />
 
+      {/* Deep-link entry (web+xerro:// protocol handler) */}
+      <Route
+        path="/open"
+        lazy={lazyImportComponent(() => import("@/pages/OpenTarget"))}
+      />
+
       {/* Chat routes */}
       <Route
         path="/chat"
