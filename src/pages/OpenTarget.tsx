@@ -14,7 +14,7 @@ export default function OpenTarget() {
   return <Navigate to={resolveTarget(target)} replace />;
 }
 
-export function resolveTarget(raw: string): string {
+function resolveTarget(raw: string): string {
   let value = raw.trim();
   try {
     value = decodeURIComponent(value);
